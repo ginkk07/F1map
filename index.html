@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 科技導航地圖</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0; background-color: #0e121b; color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif; overflow: hidden;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 210, 255, 0.02) 2px, rgba(0, 210, 255, 0.02) 4px);
+  }
+
+  .top-nav { display: flex; justify-content: center; gap: 40px; padding: 20px 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; z-index: 10; position: relative; }
+  .nav-item { color: #445363; cursor: pointer; transition: 0.3s; }
+  .nav-item:hover, .nav-item.active { color: #00d2ff; text-shadow: 0 0 8px #00d2ff; }
+
+  .telemetry { position: absolute; font-size: 0.75rem; color: #4a6b8c; line-height: 1.5; z-index: 5; pointer-events: none; }
+  .telemetry span { color: #00d2ff; }
+  .top-left { top: 20px; left: 20px; }
+  .top-right { top: 20px; right: 20px; text-align: right; }
+
+  /* ==========================================
+     🌟 3D 空間與圖層設定
+     ========================================== */
+  .map-container {
+    width: 100vw; height: calc(100vh - 80px);
+    display: flex; justify-content: center; align-items: center;
+    position: relative;
+    perspective: 1200px; /* 攝影機透視深度 */
+  }
+
+  .map-wrapper {
+    position: relative; 
+    width: 90%; max-width: 1400px; aspect-ratio: 16 / 9;
+    transform-style: preserve-3d;
+    transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  canvas {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; display: block;
+  }
+
+  /* 1. 粒子層： Z = 5px，創造「螢幕內部」的微距景深，偏移量極小 */
+  canvas#particleCanvas {
+    transform: translateZ(5px);
+    opacity: 1; /* 稍微透明一點，增加層次感 */
+    pointer-events:none;
+  }
+
+  /* 2. 底圖層：基準面 */
+  canvas#baseMapCanvas {
+    transform: translateZ(0px);
+  }
+
+  /* 3. 標記點：Z=0 */
+  .race-pin {
+    position: absolute; width: 12px; height: 12px;
+    background-color: #00ffff; border-radius: 50%;
+    transform: translate(-50%, -50%) translateZ(0px); /* Z 軸歸零 */
+    cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+    z-index: 20; transition: opacity 0.3s;
+    transform-style: preserve-3d;
+  }
+
+  .race-pin::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 24px; height: 24px; border: 1px solid #00ffff; border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  /*游標懸浮標籤*/
+  .pin-label {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(12, 18, 28, 0.9); border: 1px solid #00ffff;
+    color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
+    padding: 6px 12px; border-radius: 4px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  }
+
+  .race-pin:hover .pin-label {
+    opacity: 1; bottom: 28px; text-shadow: 0 0 5px #00ffff;
+  }
+
+  .race-pin.active .pin-label {
+    opacity: 1; bottom: 28px; background: rgba(0, 255, 255, 0.2);
+  }
+
+  @keyframes pulse {
+    0% { width: 12px; height: 12px; opacity: 1; }
+    100% { width: 45px; height: 45px; opacity: 0; }
+  }
+
+  .race-pin.active .tooltip { opacity: 1; bottom: 35px; pointer-events: auto; }
+  .race-pin.dimmed { opacity: 0.3; }
+
+  /* ==========================================
+     🌟 面板反轉修正
+     ========================================== */
+  .tooltip {
+    position: absolute; bottom: 25px; left: 50%; 
+    /* 保持面板立起迎向鏡頭 */
+    transform: translateX(-50%) rotateX(-45deg);
+    transform-origin: bottom center;
+    width: 280px; background: rgba(12, 18, 28, 0.95);
+    border: 1px solid #00d2ff; border-radius: 6px; overflow: hidden;
+    opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8); z-index: 30;
+  }
+
+  /* ==========================================
+     🌟 右側滑入資訊面板 (Side Panel)
+     ========================================== */
+  .side-panel {
+    position: fixed; top: 0; right: -450px; /* 預設藏在畫面右側外面 */
+    width: 400px; height: 100vh;
+    background: rgba(10, 14, 20, 0.95);
+    border-left: 1px solid #00ffff;
+    box-shadow: -15px 0 40px rgba(0, 0, 0, 0.8);
+    z-index: 100; display: flex; flex-direction: column;
+    /* 絲滑的滑入動畫 */
+    transition: right 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  /* 當面板被加上 active class 時，滑入畫面 */
+  .side-panel.active { right: 0; }
+
+  .panel-close {
+    position: absolute; top: 20px; right: 20px; color: #fff; 
+    font-size: 1.5rem; cursor: pointer; z-index: 10; transition: 0.3s;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  }
+  .panel-close:hover { color: #00ffff; transform: scale(1.2); }
+
+  .panel-img { width: 100%; height: 280px; background-size: cover; background-position: center; border-bottom: 2px solid #00ffff; }
+  .panel-content { padding: 40px 30px; }
+  .panel-title { font-size: 2.2rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 8px #00d2ff; }
+  .panel-date { font-size: 1.1rem; color: #00ffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; }
+  .panel-desc { font-size: 1.05rem; color: #a0b0c0; line-height: 1.6; margin-bottom: 30px; }
+  
+  .panel-btn {
+    width: 100%; padding: 15px; background: transparent; border: 1px solid #00ffff;
+    color: #00ffff; font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700;
+    cursor: pointer; transition: 0.3s; letter-spacing: 2px;
+  }
+  .panel-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
+
+
+
+  .tooltip-img { width: 100%; height: 120px; background-size: cover; background-position: center; border-bottom: 1px solid #1f2d40; }
+  .tooltip-content { padding: 15px; text-align: left; }
+  .tooltip-title { font-size: 1.4rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 5px #00d2ff;}
+  .tooltip-date { font-size: 0.95rem; color: #00ffff; font-weight: 600; margin-bottom: 10px; }
+  .tooltip-desc { font-size: 0.9rem; color: #a0b0c0; line-height: 1.5; margin: 0; }
+
+</style>
+</head>
+<body>
+
+  <nav class="top-nav">
+    <div class="nav-item active">HOME</div>
+    <div class="nav-item">DESTINATIONS</div>
+  </nav>
+
+  <div class="telemetry top-left">TELEMETRY: <span>15.3</span><br>HIGH: <span>93.98</span></div>
+  <div class="telemetry top-right">SYS_STAT: <span>ONLINE</span><br>LATENCY: <span>12ms</span></div>
+
+  <div class="map-container">
+    <div class="map-wrapper" id="mapWrapper">
+      <canvas id="particleCanvas"></canvas>
+      <canvas id="baseMapCanvas"></canvas>
+
+
+      <!--地點日本-->
+      <div class="race-pin" style="top: 44%; left: 84.5%;"
+           data-title="JAPANESE GP"
+           data-date="MARCH 27 - 29"
+           data-desc="結合名古屋周邊體驗之 F1 旅遊行程，感受鈴鹿賽道的極速震撼。"
+           data-img="https://images.unsplash.com/photo-1532938911079-1b06ac7ce122?q=80&w=600&auto=format&fit=crop">
+        <div class="pin-label">JAPANESE GP</div>
+      </div>
+
+      <div class="race-pin" style="top: 63.5%;left: 75.1%;"
+           data-title="SINGAPORE GP"
+           data-date="SEPTEMBER 18 - 20"
+           data-desc="璀璨的濱海灣夜間市街賽事，享受無與倫比的城市光影與速度感。"
+           data-img="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=600&auto=format&fit=crop">
+        <div class="pin-label">SINGAPORE GP</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="side-panel" id="sidePanel">
+    <div class="panel-close" id="panelClose">✖</div>
+    <div class="panel-img" id="panelImg"></div>
+    <div class="panel-content">
+      <h2 class="panel-title" id="panelTitle">TITLE</h2>
+      <div class="panel-date" id="panelDate">DATE</div>
+      <p class="panel-desc" id="panelDesc">DESC</p>
+      <button class="panel-btn">VIEW DETAILS</button>
+    </div>
+  </div>
+
+  <script>
+    const ZOOM_LEVEL = 5;
+    
+    // 取得兩張獨立畫布
+    const baseCanvas = document.getElementById('baseMapCanvas');
+    const partCanvas = document.getElementById('particleCanvas');
+    const bCtx = baseCanvas.getContext('2d');
+    const pCtx = partCanvas.getContext('2d');
+
+    const width = 1920 * ZOOM_LEVEL;
+    const height = 1080 * ZOOM_LEVEL;
+    
+    baseCanvas.width = width; baseCanvas.height = height;
+    partCanvas.width = width; partCanvas.height = height;
+
+    const originalMap = new Image(); 
+    const maskMap = new Image();     
+
+    originalMap.src = 'worldmap.svg'; 
+
+    fetch('worldmap.svg')
+      .then(res => res.text())
+      .then(svgData => {
+        const styleTag = '<style> path { fill: #ffffff !important; stroke: none !important; } </style>';
+        const modifiedSvg = svgData.replace(/<svg[^>]*>/, match => match + styleTag);
+        const svgBlob = new Blob([modifiedSvg], {type: 'image/svg+xml;charset=utf-8'});
+        maskMap.src = URL.createObjectURL(svgBlob);
+      });
+
+    let loadedImages = 0;
+    function checkLoad() {
+      loadedImages++;
+      if (loadedImages === 2) draw3DHolographicMap();
+    }
+    originalMap.onload = checkLoad;
+    maskMap.onload = checkLoad;
+
+    function draw3DHolographicMap() {
+      // ==========================================
+      // 🌟 1. 繪製基底線條 (Base Map)
+      // ==========================================
+      bCtx.shadowColor = '#00ffff';
+      bCtx.shadowBlur = 5 * ZOOM_LEVEL; 
+      bCtx.drawImage(originalMap, 0, 0, width, height);
+
+      bCtx.shadowColor = 'rgba(0, 210, 255, 0.8)';
+      bCtx.shadowBlur = 15 * ZOOM_LEVEL;
+      bCtx.drawImage(originalMap, 0, 0, width, height);
+      bCtx.shadowBlur = 0;
+
+      // ==========================================
+      // 🌟 2. 繪製粒子效果 (Particle Map)
+      // ==========================================
+      
+      // A. 漸層邊緣遮罩
+      const edgeMaskCanvas = document.createElement('canvas');
+      edgeMaskCanvas.width = width; edgeMaskCanvas.height = height;
+      const edgeCtx = edgeMaskCanvas.getContext('2d');
+
+      // 1. 先畫上 100% 實心白色的地圖
+      edgeCtx.drawImage(maskMap, 0, 0, width, height);
+
+      // 2. 加上模糊邊緣
+      edgeCtx.globalCompositeOperation = 'destination-out';
+      edgeCtx.filter = `blur(${15 * ZOOM_LEVEL}px)`; 
+      edgeCtx.globalAlpha = 0.88; // 限制的最低擦除為 88%
+
+      edgeCtx.drawImage(maskMap, 0, 0, width, height); // 3. 擦除中心。所以內陸最深處保留最低的透明度
+
+      // B. 高密度粒子網格
+      const patternCanvas = document.createElement('canvas');
+      const dotSpacing = 8 * (ZOOM_LEVEL / 2); //點密度調整
+      patternCanvas.width = dotSpacing; patternCanvas.height = dotSpacing;
+      const patCtx = patternCanvas.getContext('2d');
+
+      patCtx.fillStyle = 'rgba(0, 210, 255, 0.6)'; 
+      patCtx.beginPath();
+      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 2.0 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); //點大小
+      patCtx.fill();
+
+      // C. 將粒子與遮罩混合，畫在獨立的粒子畫布上
+      pCtx.fillStyle = pCtx.createPattern(patternCanvas, 'repeat');
+      pCtx.fillRect(0, 0, width, height);
+      
+      pCtx.globalCompositeOperation = 'destination-in';
+      pCtx.drawImage(edgeMaskCanvas, 0, 0, width, height);
+    }
+
+    // ==========================================
+    // 🎯 3D 運鏡與置中邏輯
+    // ==========================================
+    const mapWrapper = document.getElementById('mapWrapper');
+    const mapContainer = document.querySelector('.map-container');
+    const pins = document.querySelectorAll('.race-pin');
+
+    // 抓取側邊面板的各個元素
+    const sidePanel = document.getElementById('sidePanel');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelDate = document.getElementById('panelDate');
+    const panelDesc = document.getElementById('panelDesc');
+    const panelImg = document.getElementById('panelImg');
+    const panelClose = document.getElementById('panelClose');
+
+    pins.forEach(pin => {
+      pin.addEventListener('click', function(e) {
+        e.stopPropagation(); 
+
+        // 1. 光點狀態切換
+        pins.forEach(p => { p.classList.remove('active'); p.classList.add('dimmed'); });
+        this.classList.add('active'); this.classList.remove('dimmed');
+
+        // 2. 地圖 3D 運鏡
+        const topVal = parseFloat(this.style.top);
+        const leftVal = parseFloat(this.style.left);
+        const moveX = 50 - leftVal; 
+        const moveY = 50 - topVal + 15; 
+
+        mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
+        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(45deg)`;
+
+        // 光點不倒翁效果：永遠正對鏡頭
+        pins.forEach(p => {
+          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-45deg)`;
+        });
+
+        // ==========================================
+        // 🌟 3. 讀取地點資料，並滑出右側面板
+        // ==========================================
+        panelTitle.textContent = this.getAttribute('data-title');
+        panelDate.textContent = this.getAttribute('data-date');
+        panelDesc.textContent = this.getAttribute('data-desc');
+        panelImg.style.backgroundImage = `url('${this.getAttribute('data-img')}')`;
+        
+        sidePanel.classList.add('active'); // 呼叫面板滑入
+      });
+    });
+
+    // 關閉面版的共用函式
+    function closePanelAndResetMap() {
+      // 收起右側面板
+      sidePanel.classList.remove('active');
+      
+      // 退回平視角地圖
+      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
+      pins.forEach(p => {
+        p.classList.remove('active', 'dimmed');
+        p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(0deg))`;
+      });
+    }
+
+    // 點擊背景空白處，關閉面板並退回
+    mapContainer.addEventListener('click', closePanelAndResetMap);
+    
+    // 點擊面板上的 ✖ 按鈕，關閉面板並退回
+    panelClose.addEventListener('click', closePanelAndResetMap);
+
+    mapContainer.addEventListener('click', function() {
+      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
+      pins.forEach(p => {
+        p.classList.remove('active', 'dimmed');
+        p.style.transform = 'translate(-50%, -50%) translateZ(0px) scale(1)';
+      });
+    });
+  </script>
+
+</body>
+</html>
