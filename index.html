@@ -4,11 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>F1 科技導航地圖</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   body {
-    margin: 0; background-color: #0e121b; color: #00d2ff;
-    font-family: 'Rajdhani', sans-serif; overflow: hidden;
+    margin: 0; 
+    background-color: #0c0c0c; 
+    color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif; 
+    overflow: hidden;
     background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 210, 255, 0.02) 2px, rgba(0, 210, 255, 0.02) 4px);
   }
 
@@ -77,7 +80,7 @@
     position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: rgba(12, 18, 28, 0.9); border: 1px solid #00ffff;
     color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
-    padding: 6px 12px; border-radius: 4px; white-space: nowrap;
+    padding: 6px 12px; border-radius: 1px; white-space: nowrap;
     opacity: 0; pointer-events: none; transition: all 0.3s ease;
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
   }
@@ -87,7 +90,7 @@
   }
 
   .race-pin.active .pin-label {
-    opacity: 1; bottom: 28px; background: rgba(0, 255, 255, 0.2);
+    opacity: 1; bottom: 28px; background: rgba(0, 0, 0, 0.90);
   }
 
   @keyframes pulse {
@@ -136,7 +139,7 @@
   }
   .panel-close:hover { color: #00ffff; transform: scale(1.2); }
 
-  .panel-img { width: 100%; height: 280px; background-size: cover; background-position: center; border-bottom: 2px solid #00ffff; }
+  .panel-img { width: 100%; height: 245px; background-size: cover; background-position: center; }
   .panel-content { padding: 40px 30px; }
   .panel-title { font-size: 2.2rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 8px #00d2ff; }
   .panel-date { font-size: 1.1rem; color: #00ffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; }
@@ -145,9 +148,14 @@
   .panel-btn {
     width: 100%; padding: 15px; background: transparent; border: 1px solid #00ffff;
     color: #00ffff; font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700;
-    cursor: pointer; transition: 0.3s; letter-spacing: 2px;
+    cursor: pointer; transition: 0.3s; letter-spacing: 5px;
   }
-  .panel-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
+
+  .panel-btn:hover {     
+    background: #00565336;
+    color: #ffffff;
+    box-shadow: 0 0 10px #00ffff85; 
+  }
 
 
 
@@ -177,19 +185,19 @@
 
       <!--地點日本-->
       <div class="race-pin" style="top: 44%; left: 84.5%;"
-           data-title="JAPANESE GP"
+           data-title="日本大獎賽"
            data-date="MARCH 27 - 29"
            data-desc="結合名古屋周邊體驗之 F1 旅遊行程，感受鈴鹿賽道的極速震撼。"
            data-img="https://images.unsplash.com/photo-1532938911079-1b06ac7ce122?q=80&w=600&auto=format&fit=crop">
-        <div class="pin-label">JAPANESE GP</div>
+        <div class="pin-label">JAPANESE</div>
       </div>
 
       <div class="race-pin" style="top: 63.5%;left: 75.1%;"
-           data-title="SINGAPORE GP"
+           data-title="新加坡大獎賽"
            data-date="SEPTEMBER 18 - 20"
            data-desc="璀璨的濱海灣夜間市街賽事，享受無與倫比的城市光影與速度感。"
            data-img="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=600&auto=format&fit=crop">
-        <div class="pin-label">SINGAPORE GP</div>
+        <div class="pin-label">SINGAPORE</div>
       </div>
 
     </div>
@@ -324,11 +332,11 @@
         const moveY = 50 - topVal + 15; 
 
         mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
-        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(45deg)`;
+        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(55deg)`;
 
         // 光點不倒翁效果：永遠正對鏡頭
         pins.forEach(p => {
-          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-45deg)`;
+          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-55deg)`;
         });
 
         // ==========================================
@@ -348,11 +356,13 @@
       // 收起右側面板
       sidePanel.classList.remove('active');
       
-      // 退回平視角地圖
-      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
+      // 退回平視角地圖（補上了 scale(1) 確保大小正確還原）
+      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
+      
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
-        p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(0deg))`;
+        // 拿掉多餘的括號，並確保光點也一起還原角度
+        p.style.transform = 'translate(-50%, -50%) translateZ(0px) rotateX(0deg) scale(1)';
       });
     }
 
