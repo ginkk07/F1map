@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>F1 科技導航地圖</title>
+<title>F1導航地圖</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   body {
     margin: 0; 
-    background-color: #0c0c0c; 
+    background-color: #0d0d17; 
     color: #00d2ff;
     font-family: 'Rajdhani', sans-serif; 
     overflow: hidden;
@@ -25,8 +25,8 @@
   .top-right { top: 20px; right: 20px; text-align: right; }
 
   /* ==========================================
-     🌟 3D 空間與圖層設定
-     ========================================== */
+     3D 空間與圖層設定
+  ========================================== */
   .map-container {
     width: 100vw; height: calc(100vh - 80px);
     display: flex; justify-content: center; align-items: center;
@@ -36,7 +36,7 @@
 
   .map-wrapper {
     position: relative; 
-    width: 90%; max-width: 1400px; aspect-ratio: 16 / 9;
+    width: 90%; max-width: 1280px; aspect-ratio: 16 / 9;
     transform-style: preserve-3d;
     transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
   }
@@ -60,11 +60,15 @@
 
   /* 3. 標記點：Z=0 */
   .race-pin {
-    position: absolute; width: 12px; height: 12px;
-    background-color: #00ffff; border-radius: 50%;
-    transform: translate(-50%, -50%) translateZ(0px); /* Z 軸歸零 */
+    position: absolute; 
+    width: 15px; 
+    height: 15px;
+    background-color: #00ffff; 
+    border-radius: 50%;
+    transform: translate(-50%, -50%) translateZ(10px)  rotateX(0deg); /* Z 軸歸零 */
     cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
-    z-index: 20; transition: opacity 0.3s;
+    z-index: 20; 
+    transition: all 0.3s;
     transform-style: preserve-3d;
   }
 
@@ -77,20 +81,60 @@
 
   /*游標懸浮標籤*/
   .pin-label {
-    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: rgba(12, 18, 28, 0.9); border: 1px solid #00ffff;
+    position: absolute; bottom: 20px; left: 50%; 
+    transform: translate(-50%, 0px) rotateX(0deg);
+    transform-origin: bottom center; 
+    
+    background: rgba(12, 18, 28, 0.95);
+    /* 底層微弱的靜態邊框 */
+    box-shadow: inset 0 0 0 1px rgb(178 253 255 / 30%);
     color: #fff; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
-    padding: 6px 12px; border-radius: 1px; white-space: nowrap;
-    opacity: 0; pointer-events: none; transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    padding: 6px 18px; white-space: nowrap;
+    opacity: 0; 
+    pointer-events: none; 
+    z-index: 1;
+
+    transition: 
+      opacity 0.3s ease, 
+      transform 1s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
+  .pin-label::before,.pin-label::after {
+    content: ''; 
+    position: absolute;
+    /* inset: 讓動態線條稍微擴張，包在原本的按鈕外圍 */
+    inset: 0px;
+    z-index: -1;
+    
+    /* 設定動態線條的顏色與粗細 (2px) */
+    box-shadow: inset 0 0 0 1px #00ffff;
+    animation: clipBorder 5s linear infinite;
+  }
+
+  /* 讓第二條線延遲一半的動畫時間，形成對角對稱追逐 */
+  .pin-label::before {
+    animation-delay: -2.5s;
+  }
+
+
+
+  @keyframes clipBorder {
+    0%, 100% { clip-path: inset(0 0 calc(100% - 2px) 0); } /* 上邊線 */
+    25%      { clip-path: inset(0 calc(100% - 2px) 0 0); } /* 左邊線 */
+    50%      { clip-path: inset(calc(100% - 2px) 0 0 0); } /* 下邊線 */
+    75%      { clip-path: inset(0 0 0 calc(100% - 2px)); } /* 右邊線 */
+  }
+  
   .race-pin:hover .pin-label {
-    opacity: 1; bottom: 28px; text-shadow: 0 0 5px #00ffff;
+    opacity: 1; 
+    bottom: 28px; 
+    text-shadow: 0 0 5px #00ffff;
   }
 
   .race-pin.active .pin-label {
-    opacity: 1; bottom: 28px; background: rgba(0, 0, 0, 0.90);
+    opacity: 1; 
+    bottom: 28px; 
+    background: rgba(0, 0, 0, 0.90);
   }
 
   @keyframes pulse {
@@ -102,8 +146,8 @@
   .race-pin.dimmed { opacity: 0.3; }
 
   /* ==========================================
-     🌟 面板反轉修正
-     ========================================== */
+     面板反轉修正
+  ========================================== */
   .tooltip {
     position: absolute; bottom: 25px; left: 50%; 
     /* 保持面板立起迎向鏡頭 */
@@ -116,28 +160,44 @@
   }
 
   /* ==========================================
-     🌟 右側滑入資訊面板 (Side Panel)
-     ========================================== */
+     右側滑入資訊面板 (Side Panel)
+  ========================================== */
   .side-panel {
-    position: fixed; top: 0; right: -450px; /* 預設藏在畫面右側外面 */
-    width: 400px; height: 100vh;
-    background: rgba(10, 14, 20, 0.95);
-    border-left: 1px solid #00ffff;
-    box-shadow: -15px 0 40px rgba(0, 0, 0, 0.8);
-    z-index: 100; display: flex; flex-direction: column;
-    /* 絲滑的滑入動畫 */
+    display: flex; 
+    flex-direction: column;
+    position: fixed; 
+    top: 0; 
+    right: -450px; /* 預設藏在畫面右側外面 */
+    width: 400px; 
+    height: 100vh;
+    z-index: 99; 
     transition: right 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .side-panel::after{
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+    background-color: rgb(0 0 0 / 66%);
   }
 
   /* 當面板被加上 active class 時，滑入畫面 */
   .side-panel.active { right: 0; }
 
+  .side-panel-outbox{
+    position: absolute;
+    z-index: 99;
+    min-height: 100vh;
+  }
+
   .panel-close {
-    position: absolute; top: 20px; right: 20px; color: #fff; 
+    position: absolute; top: 15px; right: 20px; color: #ffffff60; 
     font-size: 1.5rem; cursor: pointer; z-index: 10; transition: 0.3s;
     text-shadow: 0 0 10px rgba(0,0,0,0.8);
   }
-  .panel-close:hover { color: #00ffff; transform: scale(1.2); }
+  .panel-close:hover { color: #ffffff; }
 
   .panel-img { width: 100%; height: 245px; background-size: cover; background-position: center; }
   .panel-content { padding: 40px 30px; }
@@ -146,17 +206,48 @@
   .panel-desc { font-size: 1.05rem; color: #a0b0c0; line-height: 1.6; margin-bottom: 30px; }
   
   .panel-btn {
-    width: 100%; padding: 15px; background: transparent; border: 1px solid #00ffff;
-    color: #00ffff; font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700;
-    cursor: pointer; transition: 0.3s; letter-spacing: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%; 
+    padding: 15px;  
+    border: 1px solid #4d4d4d80;
+    color: #697887cf; 
+    font-family: 'Rajdhani', sans-serif; 
+    font-size: 1.2rem; 
+    font-weight: 700;
+    cursor: pointer; 
+    transition: 0.3s; 
+    letter-spacing: 1px;
+    border-radius: 3px;
+    background-color: transparent;
   }
 
   .panel-btn:hover {     
-    background: #00565336;
-    color: #ffffff;
-    box-shadow: 0 0 10px #00ffff85; 
+    background-color: #4d4d4d2b;
+    color: #fff;
   }
 
+  .panel-btn:after {
+    content: "";
+    position: absolute;
+    left: .75rem;
+    width: 1rem;
+    height: 55%;
+    background-color: #00ffff;
+    -webkit-clip-path: polygon(0 0, 25% 0, 25% 100%, 0 100%);
+    clip-path: polygon(0 0, 25% 0, 25% 100%, 0 100%);
+    transition: transform .2s ease, -webkit-clip-path .2s ease;
+    transition: clip-path .2s ease, transform .2s ease;
+    transition: clip-path .2s ease, transform .2s ease, -webkit-clip-path .2s ease;
+  }
+
+  .panel-btn:hover:after {  
+    -webkit-clip-path: polygon(0 20%, 100% 50%, 0 80%, 0 80%);
+    clip-path: polygon(0 20%, 100% 50%, 0 80%, 0 80%);
+    transform: translateX(.575rem);
+  }
 
 
   .tooltip-img { width: 100%; height: 120px; background-size: cover; background-position: center; border-bottom: 1px solid #1f2d40; }
@@ -188,7 +279,7 @@
            data-title="日本大獎賽"
            data-date="MARCH 27 - 29"
            data-desc="結合名古屋周邊體驗之 F1 旅遊行程，感受鈴鹿賽道的極速震撼。"
-           data-img="https://images.unsplash.com/photo-1532938911079-1b06ac7ce122?q=80&w=600&auto=format&fit=crop">
+           data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
         <div class="pin-label">JAPANESE</div>
       </div>
 
@@ -196,7 +287,7 @@
            data-title="新加坡大獎賽"
            data-date="SEPTEMBER 18 - 20"
            data-desc="璀璨的濱海灣夜間市街賽事，享受無與倫比的城市光影與速度感。"
-           data-img="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=600&auto=format&fit=crop">
+           data-img="https://image.tristar.com.tw/Picture/NewTristar/91825/733/1741336084_a766761809_h.jpeg">
         <div class="pin-label">SINGAPORE</div>
       </div>
 
@@ -204,13 +295,15 @@
   </div>
 
   <div class="side-panel" id="sidePanel">
-    <div class="panel-close" id="panelClose">✖</div>
-    <div class="panel-img" id="panelImg"></div>
-    <div class="panel-content">
-      <h2 class="panel-title" id="panelTitle">TITLE</h2>
-      <div class="panel-date" id="panelDate">DATE</div>
-      <p class="panel-desc" id="panelDesc">DESC</p>
-      <button class="panel-btn">VIEW DETAILS</button>
+    <div class="side-panel-outbox">
+      <div class="panel-close" id="panelClose">✖</div>
+      <div class="panel-img" id="panelImg"></div>
+      <div class="panel-content">
+        <h2 class="panel-title" id="panelTitle">TITLE</h2>
+        <div class="panel-date" id="panelDate">DATE</div>
+        <p class="panel-desc" id="panelDesc">DESC</p>
+        <button class="panel-btn">VIEW DETAILS</button>
+      </div>
     </div>
   </div>
 
@@ -253,7 +346,7 @@
 
     function draw3DHolographicMap() {
       // ==========================================
-      // 🌟 1. 繪製基底線條 (Base Map)
+      // 繪製基底線條 (Base Map)
       // ==========================================
       bCtx.shadowColor = '#00ffff';
       bCtx.shadowBlur = 5 * ZOOM_LEVEL; 
@@ -265,7 +358,7 @@
       bCtx.shadowBlur = 0;
 
       // ==========================================
-      // 🌟 2. 繪製粒子效果 (Particle Map)
+      // 繪製粒子效果 (Particle Map)
       // ==========================================
       
       // A. 漸層邊緣遮罩
@@ -278,8 +371,8 @@
 
       // 2. 加上模糊邊緣
       edgeCtx.globalCompositeOperation = 'destination-out';
-      edgeCtx.filter = `blur(${15 * ZOOM_LEVEL}px)`; 
-      edgeCtx.globalAlpha = 0.88; // 限制的最低擦除為 88%
+      edgeCtx.filter = `blur(${20 * ZOOM_LEVEL}px)`; 
+      edgeCtx.globalAlpha = 0.90; // 限制的最低擦除為 88%
 
       edgeCtx.drawImage(maskMap, 0, 0, width, height); // 3. 擦除中心。所以內陸最深處保留最低的透明度
 
@@ -291,7 +384,7 @@
 
       patCtx.fillStyle = 'rgba(0, 210, 255, 0.6)'; 
       patCtx.beginPath();
-      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 2.0 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); //點大小
+      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3.5 * (ZOOM_LEVEL / 3.5), 0, Math.PI * 2); //點大小
       patCtx.fill();
 
       // C. 將粒子與遮罩混合，畫在獨立的粒子畫布上
@@ -303,7 +396,7 @@
     }
 
     // ==========================================
-    // 🎯 3D 運鏡與置中邏輯
+    // 3D 運鏡與置中邏輯
     // ==========================================
     const mapWrapper = document.getElementById('mapWrapper');
     const mapContainer = document.querySelector('.map-container');
@@ -332,15 +425,15 @@
         const moveY = 50 - topVal + 15; 
 
         mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
-        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(55deg)`;
+        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(40deg)`;
 
-        // 光點不倒翁效果：永遠正對鏡頭
+        // 光點永遠正對鏡頭
         pins.forEach(p => {
-          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-55deg)`;
+          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-40deg)`;
         });
 
         // ==========================================
-        // 🌟 3. 讀取地點資料，並滑出右側面板
+        // 讀取地點資料，並滑出右側面板
         // ==========================================
         panelTitle.textContent = this.getAttribute('data-title');
         panelDate.textContent = this.getAttribute('data-date');
@@ -357,12 +450,12 @@
       sidePanel.classList.remove('active');
       
       // 退回平視角地圖（補上了 scale(1) 確保大小正確還原）
-      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
+      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
       
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
         // 拿掉多餘的括號，並確保光點也一起還原角度
-        p.style.transform = 'translate(-50%, -50%) translateZ(0px) rotateX(0deg) scale(1)';
+        p.style.transform = 'translate(-50%, -50%) translateZ(0px) rotateX(0deg)';
       });
     }
 
@@ -373,10 +466,10 @@
     panelClose.addEventListener('click', closePanelAndResetMap);
 
     mapContainer.addEventListener('click', function() {
-      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
+      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
-        p.style.transform = 'translate(-50%, -50%) translateZ(0px) scale(1)';
+        p.style.transform = 'translate(-50%, -50%) translateZ(0px)';
       });
     });
   </script>
