@@ -9,11 +9,12 @@
   body {
     margin: 0; 
     background-color: #0d0d17; 
-    color: #00d2ff;
     font-family: 'Rajdhani', sans-serif; 
     overflow: hidden;
-    background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 210, 255, 0.02) 2px, rgba(0, 210, 255, 0.02) 4px);
-  }
+    background-image: url(/img/bg01.png);
+    background-position: top left;
+    background-size: cover;
+    }
 
   .top-nav { display: flex; justify-content: center; gap: 40px; padding: 20px 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; z-index: 10; position: relative; }
   .nav-item { color: #445363; cursor: pointer; transition: 0.3s; }
@@ -28,7 +29,7 @@
      3D 空間與圖層設定
   ========================================== */
   .map-container {
-    width: 100vw; height: calc(100vh - 80px);
+    width: 100vw; height: calc(100vh - 65px);
     display: flex; justify-content: center; align-items: center;
     position: relative;
     perspective: 1200px; /* 攝影機透視深度 */
@@ -41,42 +42,76 @@
     transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  canvas {
-    position: absolute; top: 0; left: 0;
+  /* 粒子層： Z = 5px，創造「螢幕內部」的微距景深，偏移量極小 */
+  #particleCanvas {
     width: 100%; height: 100%; display: block;
+    position: absolute; top: 0; left: 0;
+    transform: translateZ(-5px);
+    pointer-events:none;
   }
 
-  /* 1. 粒子層： Z = 5px，創造「螢幕內部」的微距景深，偏移量極小 */
-  canvas#particleCanvas {
-    transform: translateZ(5px);
+  #logo-ani{
+    position: absolute;
+    bottom: 5%;
+    left: 5%;
+    /*background: #ccc;*/
+    width: 250px;
+    height: 50px;
+    z-index: 20;
+  }
+
+  #logo-ani-poly{
+    position: relative
+  }
+
+  #logo-ani-name{
+    position: relative;
+    line-height: 1rem;
+    font-size: 1.6rem;
+    color: #fff;
+
+    & h3{
+      position: absolute;
+      top: 0px;
+      margin: 0;
+    }
+  }
+
+  /* 線條層 */
+  #baseMapCanvas {
+    width: 100%; height: 100%; display: block;
+    position: absolute; top: 0; left: 0;
+    transform: translateZ(0);
     opacity: 1; /* 稍微透明一點，增加層次感 */
     pointer-events:none;
   }
 
-  /* 2. 底圖層：基準面 */
-  canvas#baseMapCanvas {
-    transform: translateZ(0px);
-  }
-
-  /* 3. 標記點：Z=0 */
+  /* 標記點：Z=0 */
   .race-pin {
     position: absolute; 
-    width: 15px; 
-    height: 15px;
-    background-color: #00ffff; 
+    width: 11px; 
+    height: 11px;
+    background-color: #ffeb00; 
     border-radius: 50%;
-    transform: translate(-50%, -50%) translateZ(10px)  rotateX(0deg); /* Z 軸歸零 */
-    cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+    transform: translate(-50%, -50%) translateZ(6px)  rotateX(0deg); /* Z 軸歸零 */
+    cursor: pointer; 
+    box-shadow: 0 0 5px rgb(255 235 0);
     z-index: 20; 
     transition: all 0.3s;
     transform-style: preserve-3d;
   }
 
   .race-pin::after {
-    content: ''; position: absolute;
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 24px; height: 24px; border: 1px solid #00ffff; border-radius: 50%;
-    animation: pulse 1.5s infinite;
+    content: ''; 
+    position: absolute;
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%);
+    width: 13px; 
+    height: 13px; 
+    border: 1px solid #ffeb00; 
+    box-sizing: border-box;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
   }
 
   /*游標懸浮標籤*/
@@ -94,9 +129,7 @@
     pointer-events: none; 
     z-index: 1;
 
-    transition: 
-      opacity 0.3s ease, 
-      transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
   .pin-label::before,.pin-label::after {
@@ -138,12 +171,28 @@
   }
 
   @keyframes pulse {
-    0% { width: 12px; height: 12px; opacity: 1; }
-    100% { width: 45px; height: 45px; opacity: 0; }
+    0% { width: 13px; height: 13px; opacity: 1; }
+    100% { width: 49px; height: 49px; opacity: 0; }
   }
 
   .race-pin.active .tooltip { opacity: 1; bottom: 35px; pointer-events: auto; }
   .race-pin.dimmed { opacity: 0.3; }
+
+  /* ==========================================
+     粒子煙霧畫布
+    ========================================== */
+  #fogCanvas {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; 
+    height: 40vh; /* 佔據螢幕底部 40% 的空間 */
+    pointer-events: none; /* 絕對不能擋住滑鼠點擊 */
+    z-index: -5;
+    
+    /* 魔法遮罩：讓畫布頂部的邊緣自然淡出，完美融入星空背景 */
+    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
+  }
 
   /* ==========================================
      面板反轉修正
@@ -180,7 +229,7 @@
     width: 100%;
     height: 100%;
     backdrop-filter: blur(5px);
-    background-color: rgb(0 0 0 / 66%);
+    background-color: rgb(0 0 0 / 75%);
   }
 
   /* 當面板被加上 active class 時，滑入畫面 */
@@ -193,11 +242,19 @@
   }
 
   .panel-close {
-    position: absolute; top: 15px; right: 20px; color: #ffffff60; 
-    font-size: 1.5rem; cursor: pointer; z-index: 10; transition: 0.3s;
-    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    position: absolute;
+    top: 0%;
+    right: 100%;
+    padding: 10px 12px;
+    color: #ffffff88;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: 0.3s;
+    background-color: #80adb6;
+    border-radius: 2px 0 0 2px;
   }
-  .panel-close:hover { color: #ffffff; }
+  .panel-close:hover { color: #ffffff; background-color: #00b2d9;}
 
   .panel-img { width: 100%; height: 245px; background-size: cover; background-position: center; }
   .panel-content { padding: 40px 30px; }
@@ -215,8 +272,8 @@
     border: 1px solid #4d4d4d80;
     color: #697887cf; 
     font-family: 'Rajdhani', sans-serif; 
-    font-size: 1.2rem; 
-    font-weight: 700;
+    font-size: 1.3rem; 
+    font-weight: 600;
     cursor: pointer; 
     transition: 0.3s; 
     letter-spacing: 1px;
@@ -225,8 +282,9 @@
   }
 
   .panel-btn:hover {     
-    background-color: #4d4d4d2b;
+    background-color: rgb(93 130 149 / 20%);
     color: #fff;
+    letter-spacing: 5px;
   }
 
   .panel-btn:after {
@@ -268,13 +326,27 @@
   <div class="telemetry top-left">TELEMETRY: <span>15.3</span><br>HIGH: <span>93.98</span></div>
   <div class="telemetry top-right">SYS_STAT: <span>ONLINE</span><br>LATENCY: <span>12ms</span></div>
 
+
   <div class="map-container">
+    <div id="logo-ani">
+      <div id="logo-ani-poly"></div>
+      <div id="logo-ani-name">
+        <h3>TRISTAR TOUR</h3>
+      </div>
+    </div>
     <div class="map-wrapper" id="mapWrapper">
       <canvas id="particleCanvas"></canvas>
       <canvas id="baseMapCanvas"></canvas>
 
-
-      <!--地點日本-->
+      <!--地點:上海-->
+      <div class="race-pin" style="top: 46%; left: 80%;"
+           data-title="上海大獎賽"
+           data-date="MARCH 13 - 15"
+           data-desc="上海F1國際賽車場位於嘉定區，是舉辦F1中國大獎賽的專用場地。賽道設計呈「上」字形，象徵力爭上游，總長5.451公里，以複雜彎道和1.2公里長直道著稱，時速可達327公里/小時，充滿挑戰性。該賽場於2004年啟用，是亞洲頂級賽車場之一。"
+           data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
+        <div class="pin-label">CHINA</div>
+      </div>
+      <!--地點:日本-->
       <div class="race-pin" style="top: 44%; left: 84.5%;"
            data-title="日本大獎賽"
            data-date="MARCH 27 - 29"
@@ -282,17 +354,36 @@
            data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
         <div class="pin-label">JAPANESE</div>
       </div>
-
+      <!--地點:新加坡-->
       <div class="race-pin" style="top: 63.5%;left: 75.1%;"
            data-title="新加坡大獎賽"
-           data-date="SEPTEMBER 18 - 20"
+           data-date="OCTOBER 09 - 11"
            data-desc="璀璨的濱海灣夜間市街賽事，享受無與倫比的城市光影與速度感。"
            data-img="https://image.tristar.com.tw/Picture/NewTristar/91825/733/1741336084_a766761809_h.jpeg">
         <div class="pin-label">SINGAPORE</div>
       </div>
 
+      <!--地點:匈牙利-->
+      <div class="race-pin" style="top: 35%;left: 52.5%;"
+           data-title="匈牙利大獎賽"
+           data-date="JULY 24 - 26"
+           data-desc="此賽道以緊湊多彎的設計聞名，彎道數量多且連貫，對車手操控技術要求極高。由於缺乏長直道及超車點，加上高溫和塵土飛揚的環境，被稱為「F1中的卡丁車賽道」。"
+           data-img="https://image.tristar.com.tw/Picture/NewTristar/101183/386/1726105399_8fce4ddfcb_h.jpeg">
+        <div class="pin-label">HUNGARY</div>
+      </div>
+
+      <!--地點:摩納哥-->
+      <div class="race-pin" style="top: 38.5%;left: 48.5%;"
+           data-title="摩納哥大獎賽"
+           data-date="JUNE 05 - 07"
+           data-desc="摩納哥大獎賽是一級方程式賽車每年在蒙特卡洛的摩納哥賽道舉行的比賽。從1929年開跑以來被大眾認為是最重要及最負盛名的汽車賽事，優美的風景和刺激的賽事讓摩納哥大獎賽有「一級方程式皇冠之上的明珠」的稱號。"
+           data-img="https://image.tristar.com.tw/Picture/NewTristar/101183/540/1726108674_f86129b5cc_h.webp">
+        <div class="pin-label">MONACO</div>
+      </div>
     </div>
+    <canvas id="fogCanvas"></canvas>
   </div>
+  
 
   <div class="side-panel" id="sidePanel">
     <div class="side-panel-outbox">
@@ -306,6 +397,8 @@
       </div>
     </div>
   </div>
+
+  
 
   <script>
     const ZOOM_LEVEL = 5;
@@ -376,7 +469,7 @@
 
       edgeCtx.drawImage(maskMap, 0, 0, width, height); // 3. 擦除中心。所以內陸最深處保留最低的透明度
 
-      // B. 高密度粒子網格
+      // B. 粒子網格
       const patternCanvas = document.createElement('canvas');
       const dotSpacing = 8 * (ZOOM_LEVEL / 2); //點密度調整
       patternCanvas.width = dotSpacing; patternCanvas.height = dotSpacing;
@@ -384,7 +477,7 @@
 
       patCtx.fillStyle = 'rgba(0, 210, 255, 0.6)'; 
       patCtx.beginPath();
-      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3.5 * (ZOOM_LEVEL / 3.5), 0, Math.PI * 2); //點大小
+      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); //點大小
       patCtx.fill();
 
       // C. 將粒子與遮罩混合，畫在獨立的粒子畫布上
@@ -425,11 +518,11 @@
         const moveY = 50 - topVal + 15; 
 
         mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
-        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(40deg)`;
+        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(50deg)`;
 
         // 光點永遠正對鏡頭
         pins.forEach(p => {
-          p.style.transform = `translate(-50%, -50%) translateZ(0px) rotateX(-40deg)`;
+          p.style.transform = `translate(-50%, -50%) translateZ(5px) rotateX(-50deg)`;
         });
 
         // ==========================================
@@ -455,7 +548,7 @@
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
         // 拿掉多餘的括號，並確保光點也一起還原角度
-        p.style.transform = 'translate(-50%, -50%) translateZ(0px) rotateX(0deg)';
+        p.style.transform = 'translate(-50%, -50%) translateZ(5px) rotateX(0deg)';
       });
     }
 
@@ -465,13 +558,107 @@
     // 點擊面板上的 ✖ 按鈕，關閉面板並退回
     panelClose.addEventListener('click', closePanelAndResetMap);
 
-    mapContainer.addEventListener('click', function() {
-      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
-      pins.forEach(p => {
-        p.classList.remove('active', 'dimmed');
-        p.style.transform = 'translate(-50%, -50%) translateZ(0px)';
-      });
-    });
+  </script>
+
+  <script>
+  // ==========================================
+    // 🌟 底部流動雲層引擎 (真實材質粒子版)
+    // ==========================================
+    const fogCanvas = document.getElementById('fogCanvas');
+    const fCtx = fogCanvas.getContext('2d');
+
+    function resizeFog() {
+      fogCanvas.width = window.innerWidth;
+      fogCanvas.height = window.innerHeight * 0.45; 
+    }
+    window.addEventListener('resize', resizeFog);
+    resizeFog();
+
+    // 1. 載入開源的「真實煙霧筆刷」圖片
+    const smokeImage = new Image();
+    smokeImage.crossOrigin = "Anonymous";
+    // 這是一張國外開發者常用的高品質煙霧去背 PNG
+    smokeImage.src = './img/Smoke-Element.png';
+
+    // 等待真實材質載入完成後，才開始啟動引擎
+    smokeImage.onload = () => {
+      
+      // 離屏渲染染色 (白煙染色)
+      const tintedCanvas = document.createElement('canvas');
+      tintedCanvas.width = smokeImage.width;
+      tintedCanvas.height = smokeImage.height;
+      const tCtx = tintedCanvas.getContext('2d');
+      tCtx.drawImage(smokeImage, 0, 0);
+      tCtx.globalCompositeOperation = 'source-in'; // 只在有煙霧的地方填色
+      tCtx.fillStyle = '#126087'; // 改煙霧的顏色
+      tCtx.fillRect(0, 0, tintedCanvas.width, tintedCanvas.height);
+
+      // 2. 建立雲層陣列 (純左右交錯版)
+      const clouds = [];
+      const cloudCount = 45; 
+
+      for (let i = 0; i < cloudCount; i++) {
+        const layer = i % 3; 
+        let size, alpha;
+        
+        if (layer === 0) { 
+          size = Math.random() * 600 + 600; 
+          alpha = 0.08; 
+        } else if (layer === 1) { 
+          size = Math.random() * 400 + 300; 
+          alpha = 0.10; 
+        } else { 
+          size = Math.random() * 250 + 250; 
+          alpha = 0.12; 
+        }
+
+        const initialY = fogCanvas.height - (size * 0.4) + (Math.random() * 100 - 50);
+
+        clouds.push({
+          x: Math.random() * fogCanvas.width,
+          y: initialY, 
+          // 水平速度，隨機向左或向右
+          vx: (Math.random() - 0.5) * 0.5, 
+          size: size,
+          alpha: alpha,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.0015
+        });
+      }
+
+      // 3. 雲層流動動畫迴圈
+      function animateFog() {
+        fCtx.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
+        
+        fCtx.globalCompositeOperation = 'screen';
+
+        for (let p of clouds) {
+          // 只更新 X 軸位置
+          p.x += p.vx;
+          p.rotation += p.rotSpeed; 
+
+          // X 軸雙向無縫接軌
+          if (p.x > fogCanvas.width + p.size) {
+            p.x = -p.size;
+          } else if (p.x < -p.size) {
+            p.x = fogCanvas.width + p.size;
+          }
+
+          // 繪製這朵雲
+          fCtx.save();
+          fCtx.translate(p.x, p.y);
+          fCtx.rotate(p.rotation);
+          fCtx.globalAlpha = p.alpha;
+          fCtx.drawImage(tintedCanvas, -p.size / 2, -p.size / 2, p.size, p.size);
+          fCtx.restore();
+        }
+        
+        requestAnimationFrame(animateFog);
+      }
+      
+      // 啟動引擎
+      animateFog();
+    };
   </script>
 
 </body>
