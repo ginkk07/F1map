@@ -6,6 +6,8 @@
 <title>F1導航地圖</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
+  a {margin: 0;text-decoration:none;color: #fff;}
+  
   body {
     margin: 0; 
     background-color: #0d0d17; 
@@ -14,7 +16,7 @@
     background-image: url(/img/bg01.png);
     background-position: top left;
     background-size: cover;
-    }
+  }
 
   .top-nav { display: flex; justify-content: center; gap: 40px; padding: 20px 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; z-index: 10; position: relative; }
   .nav-item { color: #445363; cursor: pointer; transition: 0.3s; }
@@ -51,33 +53,148 @@
   }
 
   #logo-ani{
+    display: flex;
     position: absolute;
-    bottom: 5%;
-    left: 5%;
-    /*background: #ccc;*/
+    bottom: 30px;
+    left: 20px;
     width: 250px;
-    height: 50px;
+    height: 25px;
     z-index: 20;
+    cursor: pointer;
+    transition: 0.3s;
   }
 
   #logo-ani-poly{
-    position: relative
+    position: relative;
+    height: 25px;
+    width: 25px;
+    flex-grow: 0;
+    z-index: 10;
+
+    & span:nth-child(1){
+      display: block;
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      left: 0;
+      top: 0;
+      background-color: #fff;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.0);
+    }
+
+    & span:nth-child(2){
+      display: block;
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      right: 0;
+      top: 0;
+      background-color: #fff;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.0);
+    }
+
+    & span:nth-child(3){
+      display: block;
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      right: 0;
+      bottom: 0;
+      background-color: #fff;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.0);
+    }
+
+    & span:nth-child(4){
+      display: block;
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      left: 0;
+      bottom: 0;
+      background-color: #fff;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.0);
+    }
+
   }
 
   #logo-ani-name{
+    height: 100%;
     position: relative;
     line-height: 1rem;
-    font-size: 1.6rem;
     color: #fff;
+    flex-grow: 1;
+    overflow: clip;
+    margin-left: 0.5rem;
+    z-index: 20;
 
-    & h3{
+    & h3:nth-child(1){
       position: absolute;
-      top: 0px;
+      top: 50%;
+      transform: translateY(-45%);
       margin: 0;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.04);
+      font-size: 2rem;
+    }
+    & h3:nth-child(2){
+      position: absolute;
+      top: 150%;
+      left: 5%;
+      transform: translateY(-40%);
+      margin: 0;
+      transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.04);
+      font-size: 1.5rem;
+      font-weight: 700;
+      opacity: 0;
     }
   }
 
-  /* 線條層 */
+  /*LOGO動畫*/
+  #logo-ani:hover  {
+
+    & #logo-ani-name h3:nth-child(1) { top: -150%; }
+    & #logo-ani-name h3:nth-child(2) { top: 50%; opacity: 1;}
+
+    & #logo-ani-poly span{
+      /*border-radius: 2rem;*/
+      
+    }
+
+    & #logo-ani-poly span:nth-child(1){
+      top: 0;
+      left: 100%;
+      width: 200px;
+      height: 120%;
+      background-color: #5c5c5c;
+    }
+
+    & #logo-ani-poly span:nth-child(2){
+      top: -20%;
+      right: 5px;
+      height: 10px;
+      width: 10px;
+      background-color: #ffe508;
+    }
+
+    & #logo-ani-poly span:nth-child(3){
+      bottom: -5px;
+      right: -5px;
+      height: 10px;
+      width: 10px;
+      background-color: #ffe508;
+    }
+
+    & #logo-ani-poly span:nth-child(4){
+      bottom: 0;
+      left: 100%;
+      width: 200px;
+      height: 120%;
+      background-color: #5c5c5c;
+    }
+  }
+
+  
+
+  /* MAP線條層 */
   #baseMapCanvas {
     width: 100%; height: 100%; display: block;
     position: absolute; top: 0; left: 0;
@@ -86,16 +203,16 @@
     pointer-events:none;
   }
 
-  /* 標記點：Z=0 */
+  /* MAP標記點：Z=0 */
   .race-pin {
     position: absolute; 
     width: 11px; 
     height: 11px;
-    background-color: #ffeb00; 
+    background-color: #ffd518; 
     border-radius: 50%;
     transform: translate(-50%, -50%) translateZ(6px)  rotateX(0deg); /* Z 軸歸零 */
     cursor: pointer; 
-    box-shadow: 0 0 5px rgb(255 235 0);
+    box-shadow: 0 0 3px #000000;
     z-index: 20; 
     transition: all 0.3s;
     transform-style: preserve-3d;
@@ -108,13 +225,13 @@
     transform: translate(-50%, -50%);
     width: 13px; 
     height: 13px; 
-    border: 1px solid #ffeb00; 
+    border: 1px solid #ffd518; 
     box-sizing: border-box;
     border-radius: 50%;
     animation: pulse 2s infinite;
   }
 
-  /*游標懸浮標籤*/
+  /*MAP游標懸浮標籤*/
   .pin-label {
     position: absolute; bottom: 20px; left: 50%; 
     transform: translate(-50%, 0px) rotateX(0deg);
@@ -141,12 +258,12 @@
     
     /* 設定動態線條的顏色與粗細 (2px) */
     box-shadow: inset 0 0 0 1px #00ffff;
-    animation: clipBorder 5s linear infinite;
+    animation: clipBorder 4s linear infinite;
   }
 
   /* 讓第二條線延遲一半的動畫時間，形成對角對稱追逐 */
   .pin-label::before {
-    animation-delay: -2.5s;
+    animation-delay: -2s;
   }
 
 
@@ -251,16 +368,16 @@
     cursor: pointer;
     z-index: 10;
     transition: 0.3s;
-    background-color: #80adb6;
+    background-color: #5b5b5b;
     border-radius: 2px 0 0 2px;
   }
-  .panel-close:hover { color: #ffffff; background-color: #00b2d9;}
+  .panel-close:hover { color: #ffffff; background-color: #009bca;}
 
   .panel-img { width: 100%; height: 245px; background-size: cover; background-position: center; }
   .panel-content { padding: 40px 30px; }
   .panel-title { font-size: 2.2rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 8px #00d2ff; }
   .panel-date { font-size: 1.1rem; color: #00ffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; }
-  .panel-desc { font-size: 1.05rem; color: #a0b0c0; line-height: 1.6; margin-bottom: 30px; }
+  .panel-desc { font-size: 1.05rem; color: #a0b0c0; line-height: 1.6; margin-bottom: 30px; letter-spacing: 0.2px;}
   
   .panel-btn {
     display: flex;
@@ -328,10 +445,16 @@
 
 
   <div class="map-container">
-    <div id="logo-ani">
-      <div id="logo-ani-poly"></div>
+    <div id="logo-ani" onclick="window.location.href='https://www.tristar.com.tw/'">
+      <div id="logo-ani-poly">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
       <div id="logo-ani-name">
         <h3>TRISTAR TOUR</h3>
+        <h3>福泰旅遊</h3>
       </div>
     </div>
     <div class="map-wrapper" id="mapWrapper">
@@ -352,7 +475,7 @@
            data-date="MARCH 27 - 29"
            data-desc="結合名古屋周邊體驗之 F1 旅遊行程，感受鈴鹿賽道的極速震撼。"
            data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
-        <div class="pin-label">JAPANESE</div>
+        <div class="pin-label">JAPAN</div>
       </div>
       <!--地點:新加坡-->
       <div class="race-pin" style="top: 63.5%;left: 75.1%;"
@@ -438,9 +561,8 @@
     maskMap.onload = checkLoad;
 
     function draw3DHolographicMap() {
-      // ==========================================
+
       // 繪製基底線條 (Base Map)
-      // ==========================================
       bCtx.shadowColor = '#00ffff';
       bCtx.shadowBlur = 5 * ZOOM_LEVEL; 
       bCtx.drawImage(originalMap, 0, 0, width, height);
@@ -450,37 +572,34 @@
       bCtx.drawImage(originalMap, 0, 0, width, height);
       bCtx.shadowBlur = 0;
 
-      // ==========================================
       // 繪製粒子效果 (Particle Map)
-      // ==========================================
-      
       // A. 漸層邊緣遮罩
       const edgeMaskCanvas = document.createElement('canvas');
       edgeMaskCanvas.width = width; edgeMaskCanvas.height = height;
       const edgeCtx = edgeMaskCanvas.getContext('2d');
 
-      // 1. 先畫上 100% 實心白色的地圖
+      // 畫上 100% 實心白色的地圖
       edgeCtx.drawImage(maskMap, 0, 0, width, height);
 
-      // 2. 加上模糊邊緣
+      // 加上模糊邊緣
       edgeCtx.globalCompositeOperation = 'destination-out';
       edgeCtx.filter = `blur(${20 * ZOOM_LEVEL}px)`; 
-      edgeCtx.globalAlpha = 0.90; // 限制的最低擦除為 88%
+      edgeCtx.globalAlpha = 0.88; // 限制的最低減去%
 
-      edgeCtx.drawImage(maskMap, 0, 0, width, height); // 3. 擦除中心。所以內陸最深處保留最低的透明度
+      edgeCtx.drawImage(maskMap, 0, 0, width, height); // 擦除中心。所以內陸最深處保留最低的透明度
 
-      // B. 粒子網格
+      // 粒子網格
       const patternCanvas = document.createElement('canvas');
-      const dotSpacing = 8 * (ZOOM_LEVEL / 2); //點密度調整
+      const dotSpacing = 8 * (ZOOM_LEVEL / 2); // 點密度調整
       patternCanvas.width = dotSpacing; patternCanvas.height = dotSpacing;
       const patCtx = patternCanvas.getContext('2d');
 
       patCtx.fillStyle = 'rgba(0, 210, 255, 0.6)'; 
       patCtx.beginPath();
-      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); //點大小
+      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); // 點大小
       patCtx.fill();
 
-      // C. 將粒子與遮罩混合，畫在獨立的粒子畫布上
+      // 將粒子與遮罩混合，畫在獨立的粒子畫布上
       pCtx.fillStyle = pCtx.createPattern(patternCanvas, 'repeat');
       pCtx.fillRect(0, 0, width, height);
       
@@ -488,9 +607,7 @@
       pCtx.drawImage(edgeMaskCanvas, 0, 0, width, height);
     }
 
-    // ==========================================
     // 3D 運鏡與置中邏輯
-    // ==========================================
     const mapWrapper = document.getElementById('mapWrapper');
     const mapContainer = document.querySelector('.map-container');
     const pins = document.querySelectorAll('.race-pin');
@@ -507,26 +624,35 @@
       pin.addEventListener('click', function(e) {
         e.stopPropagation(); 
 
-        // 1. 光點狀態切換
+        // 光點狀態切換 (PC 與手機版共通)
         pins.forEach(p => { p.classList.remove('active'); p.classList.add('dimmed'); });
         this.classList.add('active'); this.classList.remove('dimmed');
 
-        // 2. 地圖 3D 運鏡
-        const topVal = parseFloat(this.style.top);
-        const leftVal = parseFloat(this.style.left);
-        const moveX = 50 - leftVal; 
-        const moveY = 50 - topVal + 15; 
+        // ==========================================
+        // 判斷是否為 PC 版 (設定大於 768px 才會 Zoom-in)
+        // ==========================================
+        if (window.innerWidth > 768) {
+            const topVal = parseFloat(this.style.top);
+            const leftVal = parseFloat(this.style.left);
+            const moveX = 50 - leftVal; 
+            const moveY = 50 - topVal + 15; 
 
-        mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
-        mapWrapper.style.transform = `translate(${moveX}%, ${moveY}%) scale(3) rotateX(50deg)`;
+            // 計算偏移量側邊欄寬200px。
+            const offsetPx = 200;
 
-        // 光點永遠正對鏡頭
-        pins.forEach(p => {
-          p.style.transform = `translate(-50%, -50%) translateZ(5px) rotateX(-50deg)`;
-        });
+            mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
+            
+            // 使用 calc() 結合 % 與 px 進行精準向左偏移
+            mapWrapper.style.transform = `translate(calc(${moveX}% - ${offsetPx}px), ${moveY}%) scale(3) rotateX(50deg)`;
+
+            // 光點轉向，永遠正對鏡頭
+            pins.forEach(p => {
+              p.style.transform = `translate(-50%, -50%) translateZ(5px) rotateX(-50deg)`;
+            });
+        }
 
         // ==========================================
-        // 讀取地點資料，並滑出右側面板
+        // 3. 讀取地點資料，並滑出右側面板 (PC 與手機版共通)
         // ==========================================
         panelTitle.textContent = this.getAttribute('data-title');
         panelDate.textContent = this.getAttribute('data-date');
@@ -543,7 +669,7 @@
       sidePanel.classList.remove('active');
       
       // 退回平視角地圖（補上了 scale(1) 確保大小正確還原）
-      mapWrapper.style.transform = 'translate(0%, 0%) rotateX(0deg)';
+      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
       
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
@@ -562,8 +688,8 @@
 
   <script>
   // ==========================================
-    // 🌟 底部流動雲層引擎 (真實材質粒子版)
-    // ==========================================
+  //  底部流動煙
+  // ==========================================
     const fogCanvas = document.getElementById('fogCanvas');
     const fCtx = fogCanvas.getContext('2d');
 
@@ -574,7 +700,7 @@
     window.addEventListener('resize', resizeFog);
     resizeFog();
 
-    // 1. 載入開源的「真實煙霧筆刷」圖片
+    // 1. 載入煙霧圖片
     const smokeImage = new Image();
     smokeImage.crossOrigin = "Anonymous";
     // 這是一張國外開發者常用的高品質煙霧去背 PNG
@@ -590,7 +716,7 @@
       const tCtx = tintedCanvas.getContext('2d');
       tCtx.drawImage(smokeImage, 0, 0);
       tCtx.globalCompositeOperation = 'source-in'; // 只在有煙霧的地方填色
-      tCtx.fillStyle = '#126087'; // 改煙霧的顏色
+      tCtx.fillStyle = '#465b6a'; // 改煙霧的顏色
       tCtx.fillRect(0, 0, tintedCanvas.width, tintedCanvas.height);
 
       // 2. 建立雲層陣列 (純左右交錯版)
