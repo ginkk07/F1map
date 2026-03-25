@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>F1導航地圖</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="F1list2026.js"></script>
 <style>
   a {margin: 0;text-decoration:none;color: #fff;}
   
@@ -24,7 +25,6 @@
 
   .telemetry { position: absolute; font-size: 0.75rem; color: #4a6b8c; line-height: 1.5; z-index: 5; pointer-events: none; }
   .telemetry span { color: #00d2ff; }
-  .top-left { top: 20px; left: 20px; }
   .top-right { top: 20px; right: 20px; text-align: right; }
 
   /* ==========================================
@@ -39,7 +39,7 @@
 
   .map-wrapper {
     position: relative; 
-    width: 90%; max-width: 1280px; aspect-ratio: 16 / 9;
+    width: 90%; max-width: 1140px; aspect-ratio: 16 / 9;
     transform-style: preserve-3d;
     transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
   }
@@ -54,8 +54,8 @@
 
   #logo-ani{
     display: flex;
-    position: absolute;
-    bottom: 30px;
+    position: fixed;
+    top: 20px;
     left: 20px;
     width: 250px;
     height: 25px;
@@ -134,6 +134,7 @@
       margin: 0;
       transition: 0.66s cubic-bezier(0.07, 0.48, 0.52, 1.04);
       font-size: 2rem;
+      filter: drop-shadow(0px 2px 4px #000);
     }
     & h3:nth-child(2){
       position: absolute;
@@ -203,37 +204,87 @@
     pointer-events:none;
   }
 
-  /* MAP標記點：Z=0 */
+  /* ==========================================
+     MAP標記點：分層雷達鎖定 (核心正向，外圈貼地)
+  ========================================== */
+  
+  /* 1. 容器本身：不翻轉，負責定位並貼齊地圖平面 */
   .race-pin {
     position: absolute; 
-    width: 11px; 
-    height: 11px;
-    background-color: #ffd518; 
-    border-radius: 50%;
-    transform: translate(-50%, -50%) translateZ(6px)  rotateX(0deg); /* Z 軸歸零 */
+    width: 16px; 
+    height: 16px;
+    transform: translate(-50%, -50%); 
     cursor: pointer; 
-    box-shadow: 0 0 3px #000000;
     z-index: 20; 
-    transition: all 0.3s;
     transform-style: preserve-3d;
   }
 
-  .race-pin::after {
-    content: ''; 
+  /* 2. 外圍虛線雷達圈 */
+  .pin-radar {
     position: absolute;
-    top: 50%; left: 50%; 
-    transform: translate(-50%, -50%);
-    width: 13px; 
-    height: 13px; 
-    border: 1px solid #ffd518; 
-    box-sizing: border-box;
+    top: -8px; left: -8px; right: -8px; bottom: -8px;
+    border: 1px dashed #00d2ff; 
     border-radius: 50%;
-    animation: pulse 2s infinite;
+    animation: radarScan 6s linear infinite;
+    pointer-events: none;
+  }
+
+  /* 3. 正向層：實心藍框*/
+  .pin-core {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: 2px solid #00d2ff; 
+    border-radius: 50%;
+    box-sizing: border-box;
+    transform: rotateX(0deg); /* 預設為平視 */
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.6), inset 0 0 8px rgba(0, 210, 255, 0.4);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.3s, box-shadow 0.3s;
+  }
+
+  /* 核心中心白點 */
+  .pin-core::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px; height: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #fff;
+  }
+
+  .race-pin:hover .pin-core {
+    border-color: #ffe508;
+    box-shadow: 0 0 15px rgba(255, 229, 8, 0.8), inset 0 0 10px rgba(255, 229, 8, 0.6);
+  }
+  .race-pin:hover .pin-radar {
+    border-color: #ffe508;
+    animation-duration: 4s; /* 點擊後掃描加快 */
+  }
+
+  /* 點擊後的 Active 狀態：變成醒目的黃色 */
+  .race-pin.active .pin-core {
+    border-color: #ffe508;
+    box-shadow: 0 0 15px rgba(255, 229, 8, 0.8), inset 0 0 10px rgba(255, 229, 8, 0.6);
+  }
+  .race-pin.active .pin-radar {
+    border-color: #ffe508;
+    animation-duration: 4s; /* 點擊後掃描加快 */
+  }
+
+  /* 專屬雷達掃描動畫 */
+  @keyframes radarScan {
+    0% { transform: rotateZ(0deg) scale(0.7); opacity: 0.8; }
+    50% { transform: rotateZ(180deg) scale(0.7); opacity: 0.3; }
+    100% { transform: rotateZ(360deg) scale(0.7); opacity: 0.8; }
   }
 
   /*MAP游標懸浮標籤*/
   .pin-label {
-    position: absolute; bottom: 20px; left: 50%; 
+    position: absolute; 
+    bottom: 20px; 
+    left: 50%; 
     transform: translate(-50%, 0px) rotateX(0deg);
     transform-origin: bottom center; 
     
@@ -362,22 +413,29 @@
     position: absolute;
     top: 0%;
     right: 100%;
-    padding: 10px 12px;
+    padding: 7px 8px;
     color: #ffffff88;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
     z-index: 10;
     transition: 0.3s;
     background-color: #5b5b5b;
     border-radius: 2px 0 0 2px;
   }
-  .panel-close:hover { color: #ffffff; background-color: #009bca;}
+  .panel-close:hover { color: #ffffff; background-color: #00a5d7;}
 
-  .panel-img { width: 100%; height: 245px; background-size: cover; background-position: center; }
-  .panel-content { padding: 40px 30px; }
+  .panel-img { width: 100%; height: 225px; background-size: cover; background-position: center; }
+  .panel-content { padding: 20px; }
   .panel-title { font-size: 2.2rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 8px #00d2ff; }
   .panel-date { font-size: 1.1rem; color: #00ffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; }
-  .panel-desc { font-size: 1.05rem; color: #a0b0c0; line-height: 1.6; margin-bottom: 30px; letter-spacing: 0.2px;}
+  .panel-desc { 
+    font-size: 1rem;
+    font-weight: normal;
+    color: #a0b0c0;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    letter-spacing: 0.2px;
+  }
   
   .panel-btn {
     display: flex;
@@ -439,70 +497,26 @@
     <div class="nav-item active">HOME</div>
     <div class="nav-item">DESTINATIONS</div>
   </nav>
-
-  <div class="telemetry top-left">TELEMETRY: <span>15.3</span><br>HIGH: <span>93.98</span></div>
+  <div id="logo-ani" onclick="window.location.href='https://www.tristar.com.tw/'">
+    <div id="logo-ani-poly">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div id="logo-ani-name">
+      <h3>TRISTAR TOUR</h3>
+      <h3>福泰旅遊</h3>
+    </div>
+  </div>
   <div class="telemetry top-right">SYS_STAT: <span>ONLINE</span><br>LATENCY: <span>12ms</span></div>
 
 
   <div class="map-container">
-    <div id="logo-ani" onclick="window.location.href='https://www.tristar.com.tw/'">
-      <div id="logo-ani-poly">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-      <div id="logo-ani-name">
-        <h3>TRISTAR TOUR</h3>
-        <h3>福泰旅遊</h3>
-      </div>
-    </div>
+    
     <div class="map-wrapper" id="mapWrapper">
       <canvas id="particleCanvas"></canvas>
       <canvas id="baseMapCanvas"></canvas>
-
-      <!--地點:上海-->
-      <div class="race-pin" style="top: 46%; left: 80%;"
-           data-title="上海大獎賽"
-           data-date="MARCH 13 - 15"
-           data-desc="上海F1國際賽車場位於嘉定區，是舉辦F1中國大獎賽的專用場地。賽道設計呈「上」字形，象徵力爭上游，總長5.451公里，以複雜彎道和1.2公里長直道著稱，時速可達327公里/小時，充滿挑戰性。該賽場於2004年啟用，是亞洲頂級賽車場之一。"
-           data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
-        <div class="pin-label">CHINA</div>
-      </div>
-      <!--地點:日本-->
-      <div class="race-pin" style="top: 44%; left: 84.5%;"
-           data-title="日本大獎賽"
-           data-date="MARCH 27 - 29"
-           data-desc="結合名古屋周邊體驗之 F1 旅遊行程，感受鈴鹿賽道的極速震撼。"
-           data-img="https://image.tristar.com.tw/Picture/NewTristar/102038/015/1575885293_17bfce7886_h.jpeg">
-        <div class="pin-label">JAPAN</div>
-      </div>
-      <!--地點:新加坡-->
-      <div class="race-pin" style="top: 63.5%;left: 75.1%;"
-           data-title="新加坡大獎賽"
-           data-date="OCTOBER 09 - 11"
-           data-desc="璀璨的濱海灣夜間市街賽事，享受無與倫比的城市光影與速度感。"
-           data-img="https://image.tristar.com.tw/Picture/NewTristar/91825/733/1741336084_a766761809_h.jpeg">
-        <div class="pin-label">SINGAPORE</div>
-      </div>
-
-      <!--地點:匈牙利-->
-      <div class="race-pin" style="top: 35%;left: 52.5%;"
-           data-title="匈牙利大獎賽"
-           data-date="JULY 24 - 26"
-           data-desc="此賽道以緊湊多彎的設計聞名，彎道數量多且連貫，對車手操控技術要求極高。由於缺乏長直道及超車點，加上高溫和塵土飛揚的環境，被稱為「F1中的卡丁車賽道」。"
-           data-img="https://image.tristar.com.tw/Picture/NewTristar/101183/386/1726105399_8fce4ddfcb_h.jpeg">
-        <div class="pin-label">HUNGARY</div>
-      </div>
-
-      <!--地點:摩納哥-->
-      <div class="race-pin" style="top: 38.5%;left: 48.5%;"
-           data-title="摩納哥大獎賽"
-           data-date="JUNE 05 - 07"
-           data-desc="摩納哥大獎賽是一級方程式賽車每年在蒙特卡洛的摩納哥賽道舉行的比賽。從1929年開跑以來被大眾認為是最重要及最負盛名的汽車賽事，優美的風景和刺激的賽事讓摩納哥大獎賽有「一級方程式皇冠之上的明珠」的稱號。"
-           data-img="https://image.tristar.com.tw/Picture/NewTristar/101183/540/1726108674_f86129b5cc_h.webp">
-        <div class="pin-label">MONACO</div>
-      </div>
     </div>
     <canvas id="fogCanvas"></canvas>
   </div>
@@ -610,6 +624,39 @@
     // 3D 運鏡與置中邏輯
     const mapWrapper = document.getElementById('mapWrapper');
     const mapContainer = document.querySelector('.map-container');
+
+    // 確保 F1list2026.js 有正確載入
+    if (typeof f1Calendar2026 !== 'undefined') {
+      f1Calendar2026.forEach(race => {
+        // 建立光點 div
+        const pin = document.createElement('div');
+        pin.className = 'race-pin';
+        
+        // 🌟 核心修改 1：直接讀取 JS 檔案裡的 top 和 left 數字來定位
+        pin.style.top = `${race.top}%`;
+        pin.style.left = `${race.left}%`;
+        
+        // 🌟 核心修改 2：把真實資料綁定到 HTML 上 (讓右側面板可以讀取)
+        pin.setAttribute('data-title', race.title);
+        pin.setAttribute('data-date', race.date);
+        pin.setAttribute('data-desc', race.desc);
+        pin.setAttribute('data-img', race.img);
+        pin.setAttribute('data-link', race.link);
+
+        // 生成光點的雷達、核心與國家名稱
+        pin.innerHTML = `
+          <div class="pin-radar"></div>
+          <div class="pin-core"></div>
+          <div class="pin-label">${race.country}</div>
+        `;
+        
+        // 把光點加到地圖上
+        mapWrapper.appendChild(pin);
+      });
+    } else {
+      console.error("找不到 f1Calendar2026 資料，請檢查 F1list2026.js 是否正確引入！");
+    }
+
     const pins = document.querySelectorAll('.race-pin');
 
     // 抓取側邊面板的各個元素
@@ -619,6 +666,7 @@
     const panelDesc = document.getElementById('panelDesc');
     const panelImg = document.getElementById('panelImg');
     const panelClose = document.getElementById('panelClose');
+    const panelBtn = document.querySelector('.panel-btn');
 
     pins.forEach(pin => {
       pin.addEventListener('click', function(e) {
@@ -647,7 +695,15 @@
 
             // 光點轉向，永遠正對鏡頭
             pins.forEach(p => {
-              p.style.transform = `translate(-50%, -50%) translateZ(5px) rotateX(-50deg)`;
+              //p.style.transform = `translate(-50%, -50%)`;
+              
+              if(p.querySelector('.pin-core')){
+                p.querySelector('.pin-core').style.transform = `rotateX(0deg)`;
+              }
+              if(p.querySelector('.pin-label')){
+                // 注意：這裡使用 translate(-50%, 0px) 是為了維持原本 top:-25px 的高度設定
+                p.querySelector('.pin-label').style.transform = `translate(-50%, 0px) rotateX(-50deg)`;
+              }
             });
         }
 
@@ -658,7 +714,21 @@
         panelDate.textContent = this.getAttribute('data-date');
         panelDesc.textContent = this.getAttribute('data-desc');
         panelImg.style.backgroundImage = `url('${this.getAttribute('data-img')}')`;
-        
+
+
+        // 🌟 新增：讀取行程連結並設定 VIEW DETAILS 按鈕
+        const linkUrl = this.getAttribute('data-link');
+        const panelBtn = document.querySelector('.panel-btn'); // 抓取按鈕元素
+
+        if (linkUrl && linkUrl !== "#") {
+          panelBtn.style.display = 'block'; // 如果有網址，顯示按鈕
+          panelBtn.onclick = () => {
+            window.open(linkUrl, '_blank'); // 點擊時開啟新分頁
+          };
+        } else {
+          panelBtn.style.display = 'none'; // 如果沒網址，自動隱藏按鈕以免誤點
+        }
+
         sidePanel.classList.add('active'); // 呼叫面板滑入
       });
     });
@@ -673,8 +743,16 @@
       
       pins.forEach(p => {
         p.classList.remove('active', 'dimmed');
-        // 拿掉多餘的括號，並確保光點也一起還原角度
-        p.style.transform = 'translate(-50%, -50%) translateZ(5px) rotateX(0deg)';
+        // 容器重製
+        //p.style.transform = 'translate(-50%, -50%) translateZ(0px)';
+        
+        // 加上 if 判斷保護
+        if(p.querySelector('.pin-core')){
+          p.querySelector('.pin-core').style.transform = 'rotateX(0deg)';
+        }
+        if(p.querySelector('.pin-label')){
+          p.querySelector('.pin-label').style.transform = 'translate(-50%, 0px) rotateX(0deg)';
+        }
       });
     }
 
