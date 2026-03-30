@@ -6,7 +6,12 @@
 <title>F1導航地圖</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="F1list2026.js"></script>
+
 <style>
+  :root {
+    --race-card-height: 60px;
+  }
+
   a {margin: 0;text-decoration:none;color: #fff;}
   
   body {
@@ -165,7 +170,7 @@
       left: 100%;
       width: 200px;
       height: 120%;
-      background-color: #4d4d4d;
+      background-color: #3b3b3b;
     }
 
     & #logo-ani-poly span:nth-child(2){
@@ -189,7 +194,7 @@
       left: 100%;
       width: 200px;
       height: 120%;
-      background-color: #4d4d4d;
+      background-color: #3b3b3b;
     }
   }
 
@@ -357,7 +362,7 @@
     pointer-events: none; /* 絕對不能擋住滑鼠點擊 */
     z-index: -5;
     
-    /* 魔法遮罩：讓畫布頂部的邊緣自然淡出，完美融入星空背景 */
+    /* 遮罩：讓畫布頂部的邊緣自然淡出 */
     -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
     mask-image: linear-gradient(to top, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
   }
@@ -386,7 +391,8 @@
     top: 0; 
     right: -450px; /* 預設藏在畫面右側外面 */
     width: 400px; 
-    height: 100vh;
+    max-width: 100dvw;
+    height: 100dvh;
     z-index: 99; 
     transition: right 0.6s cubic-bezier(0.25, 1, 0.5, 1);
   }
@@ -424,10 +430,27 @@
   }
   .panel-close:hover { color: #ffffff; background-color: #00a5d7;}
 
-  .panel-img { width: 100%; height: 225px; background-size: cover; background-position: center; }
+  .panel-img { 
+    width: 100%;
+    height: 225px;
+    background-size: cover; 
+    background-position: center; 
+  }
   .panel-content { padding: 20px; }
-  .panel-title { font-size: 2.2rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 8px #00d2ff; }
-  .panel-date { font-size: 1.1rem; color: #00ffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; }
+  .panel-title { 
+    font-size: 2.2rem; 
+    font-weight: 700; 
+    color: #fff;
+     margin: 0 0 5px 0; 
+     text-shadow: 0 0 8px #00d2ff; 
+  }
+  .panel-date { 
+    font-size: 1.1rem; 
+    color: #00ffff; 
+    font-weight: 600; 
+    margin-bottom: 25px; 
+    letter-spacing: 1px; 
+  }
   .panel-desc { 
     font-size: 1rem;
     font-weight: normal;
@@ -483,11 +506,392 @@
   }
 
 
-  .tooltip-img { width: 100%; height: 120px; background-size: cover; background-position: center; border-bottom: 1px solid #1f2d40; }
+  .tooltip-img { 
+    width: 100%; 
+    height: 120px; 
+    background-size: cover; 
+    background-position: center; 
+    border-bottom: 1px solid #1f2d40; 
+  }
   .tooltip-content { padding: 15px; text-align: left; }
   .tooltip-title { font-size: 1.4rem; font-weight: 700; color: #fff; margin: 0 0 5px 0; text-shadow: 0 0 5px #00d2ff;}
   .tooltip-date { font-size: 0.95rem; color: #00ffff; font-weight: 600; margin-bottom: 10px; }
   .tooltip-desc { font-size: 0.9rem; color: #a0b0c0; line-height: 1.5; margin: 0; }
+
+  /* ==========================================
+     底部滑動抽屜與卡片清單
+     ========================================== */
+  .bottom-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    /* 預設往下藏起來，只露出上面的按鈕高度 */
+    transform: translateX(-50%) translateY(calc(100% - 40px)); 
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 50;
+    /* 順暢的滑出動畫 */
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    padding-bottom: 20px;
+  }
+
+  /* 當抽屜打開時的狀態 */
+  .bottom-drawer.open {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 開關按鈕設計 (科技感 HUD 風格) */
+  .drawer-toggle-btn {
+    background: rgba(10, 15, 30, 0.85);
+    border: 1px solid rgba(0, 210, 255, 0.5);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 8px 30px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+    height: 40px; /* 對應上面隱藏的 40px */
+  }
+  .drawer-toggle-btn:hover {
+    background: rgba(0, 210, 255, 0.2);
+    box-shadow: 0 -5px 15px rgba(0, 210, 255, 0.3);
+  }
+  .drawer-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+  }
+  /* 打開時，箭頭翻轉向下 */
+  .bottom-drawer.open .drawer-icon {
+    transform: rotate(180deg);
+  }
+
+  /* ==========================================
+     底部賽事橫向滑動清單
+     ========================================== */
+  .bottom-expand-menu {
+    position: fixed;
+    bottom: 25px;
+    left: 20px;
+    display: flex;
+    align-items: center; /* 讓按鈕和清單垂直對齊 */
+    gap: 10px;
+    z-index: 50;
+    transition: 0.3s;
+  }
+
+  /* 開關按鈕設計 */
+  .expand-toggle-btn {
+    background: rgba(10, 15, 30, 0.85);
+    border: 1px solid rgba(0, 210, 255, 1);
+    color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 0 20px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+    height: var(--race-card-height);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .expand-toggle-btn:hover {
+    background: rgba(0, 210, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+  }
+
+  .bottom-expand-menu.open{
+    left: 0;
+    transition: all 0.3s;
+  }
+
+  .bottom-expand-menu.open #expandToggleBtn{
+    width: auto;
+    padding: 0 12px 0 8px;
+    background-color: #00d2ff;
+  }
+
+  .bottom-expand-menu.open .btn-text{
+    display: none;
+    transition: all 0.3s;
+  }
+  
+  /* 開關箭頭動畫 */
+  .btn-icon {
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    
+  }
+  .bottom-expand-menu.open .btn-icon {
+    transform: scaleY(-1); /* 打開時箭頭朝左 ◀ */
+    color: #001621;
+  }
+
+  /* 核心動畫：卡片清單容器 (預設隱藏並縮短寬度) */
+  .expand-race-list {
+    width: 100%;
+    max-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: auto;
+    scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .expand-race-list.is-dragging { cursor: grabbing; }
+
+  .expand-race-list::-webkit-scrollbar { display: none; }
+
+  /* 當選單打開時，寬度伸展至視窗大小 */
+  .bottom-expand-menu.open .expand-race-list {
+    max-width: calc(100vw - 70px); /* 扣除左邊按鈕的寬度 */
+    opacity: 1;
+    visibility: visible;
+    padding-right: 20px; /* 避免右側貼死螢幕 */
+  }
+
+  /* ==========================================
+     🌟 底部容器 (防閃爍 + 滑鼠拖曳完整版)
+     ========================================== */
+  .bottom-race-list {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;          
+    max-width: 1200px;   
+    display: flex;
+    gap: 15px;           
+    overflow-x: auto;
+    padding: 10px;
+    z-index: 50;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+    cursor: grab; /* 滑鼠游標變成抓取手勢 */
+    
+    /* 🚀 核心：關閉瀏覽器的自動滾動錨定，防止無限循環時畫面閃爍跳動 */
+    overflow-anchor: none; 
+  }
+  .bottom-race-list:active {
+    cursor: grabbing; 
+  }
+  .bottom-race-list::-webkit-scrollbar {
+    display: none; 
+  }
+
+  /* 獨立卡片設計 */
+  .race-list-track {
+    --race-card-width: 220px;
+    --race-card-gap: 8px;
+    display: flex;
+    gap: var(--race-card-gap);
+    width: max-content;
+    padding: 10px 0;
+  }
+
+  .race-list-track .race-card.loop-card {
+    flex: 0 0 var(--race-card-width);
+    width: var(--race-card-width);
+  }
+  
+  .race-card {
+    flex: 0 0 135px;
+    height: 53px;
+    background-color: #000;
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .race-card-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    opacity: 0.5; transition: opacity 0.3s; z-index: 1;
+  }
+
+  .race-card:hover .race-card-bg, .race-card.active .race-card-bg { opacity: 0.8; }
+  .race-card-info {
+    position: relative;
+    z-index: 2;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  .race-card-title {
+    color: #fff;
+    font-size: 0.95rem; /* 稍微縮小文字 */
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .race-card-date { color: #00d2ff; font-size: 0.8rem; font-weight: 600; }
+
+  .race-card.simplified {
+    flex: 0 0 160px; /* PC版卡片寬度 */
+    height: var(--race-card-height);    /* 高度拉出空間顯示賽道 */
+    background-color: rgba(10, 15, 30, 0.5);
+    border: 1px solid rgb(180 180 180 / 30%);
+    display: flex;   
+    flex-direction: column; /* 改回垂直排列 */
+    justify-content: flex-end; /* 文字貼齊底部 */
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    backdrop-filter: blur(2px);
+  }
+
+  /* 卡片預設狀態：稍微往下、透明、縮小一點 */
+  .expand-race-list .race-card {
+    opacity: 0;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+  /* menu 開啟後，所有卡片播放浮起動畫 */
+  .bottom-expand-menu.open .expand-race-list .race-card {
+    animation: raceCardFloatIn 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation-delay: calc(var(--card-order, 0) * 0.03s);
+  }
+
+  @keyframes raceCardFloatIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+  /* 賽道圖背景 */
+  .race-card.simplified .race-card-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* 使用 contain 確保賽道圖完整顯示不被切掉 */
+    background-size: contain; 
+    /* 稍微把圖往上提，留空間給下面的文字 */
+    background-position: center 20%; 
+    background-repeat: no-repeat;
+    opacity: 0.3; /* 設定半透明當作浮水印 */
+    transition: all 0.3s ease;
+    z-index: 1;
+  }
+  
+
+  .race-card.simplified:hover .race-card-bg, 
+  .race-card.simplified.active .race-card-bg {
+    opacity: 0.9;
+    transform: scale(1.15); /* 賽道圖微放大 */
+    filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.8)); /* 加上藍色霓虹光暈 */
+  }
+
+  .race-card.simplified .race-card-info {
+    position: relative;
+    z-index: 2;
+    padding: 8px 5px;
+    /* 底部加入黑色漸層，確保白色字體不受背景圖干擾 */
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); 
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .race-card.simplified .race-card-title {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 4px rgba(0,0,0,1);
+  }
+
+  
+
+  /* 卡片整體的懸浮與發光效果 */
+  .race-card.simplified:hover, .race-card.simplified.active {
+    border-color: #00d2ff;
+    box-shadow: 0 0 3px rgba(0, 210, 255, 0.6);
+  }
+
+  .race-card.simplified:hover .race-card-info, .race-card.simplified.active .race-card-info{
+    background: linear-gradient(to top, rgba(0, 217, 255, 0.3), transparent);
+  } 
+  
+
+  /* 賽道圖容器 (靠左) */
+  .race-card-track-container {
+    flex: 0 0 60px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* 賽道圖片 */
+  .race-card-track {
+    max-width: 100%;
+    max-height: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.5)); /* 賽道本身自帶發光 */
+    transition: transform 0.3s ease;
+  }
+
+  /* 手機版適應 */
+  @media (max-width: 768px) {
+      :root {
+        --race-card-height: 55px;
+      }
+
+    .bottom-expand-menu { bottom: 15px; left: 10px; }
+    .expand-toggle-btn { height: var(--race-card-height); padding: 0 15px; font-size: 1rem; }
+    .bottom-expand-menu.open .expand-race-list { max-width: calc(100vw - 50px); }
+    .race-card { flex: 0 0 150px; height: 80px; }
+    .race-card-title {
+      font-size: 0.85rem;
+    }
+    .race-card-date { font-size: 0.7rem; }
+    .race-card.simplified {
+      flex: 0 0 120px; 
+      height: var(--race-card-height);    
+    }
+    .race-card.simplified .race-card-title {
+      font-size: 0.85rem;
+    }
+    .race-card-track-container {
+      flex: 0 0 45px;
+    }
+  }
+  
 
 </style>
 </head>
@@ -510,7 +914,6 @@
     </div>
   </div>
   <div class="telemetry top-right">SYS_STAT: <span>ONLINE</span><br>LATENCY: <span>12ms</span></div>
-
 
   <div class="map-container">
     
@@ -535,335 +938,15 @@
     </div>
   </div>
 
-  
-
-  <script>
-    const ZOOM_LEVEL = 5;
+  <div class="bottom-expand-menu" id="bottomExpandMenu">
+    <button class="expand-toggle-btn" id="expandToggleBtn">
+      <span class="btn-icon" id="expandBtnIcon">▲</span>
+      <span class="btn-text">Schedule</span>
+    </button>
     
-    // 取得兩張獨立畫布
-    const baseCanvas = document.getElementById('baseMapCanvas');
-    const partCanvas = document.getElementById('particleCanvas');
-    const bCtx = baseCanvas.getContext('2d');
-    const pCtx = partCanvas.getContext('2d');
+    <div class="expand-race-list" id="expandRaceList"></div>
+  </div>
 
-    const width = 1920 * ZOOM_LEVEL;
-    const height = 1080 * ZOOM_LEVEL;
-    
-    baseCanvas.width = width; baseCanvas.height = height;
-    partCanvas.width = width; partCanvas.height = height;
-
-    const originalMap = new Image(); 
-    const maskMap = new Image();     
-
-    originalMap.src = 'worldmap.svg'; 
-
-    fetch('worldmap.svg')
-      .then(res => res.text())
-      .then(svgData => {
-        const styleTag = '<style> path { fill: #ffffff !important; stroke: none !important; } </style>';
-        const modifiedSvg = svgData.replace(/<svg[^>]*>/, match => match + styleTag);
-        const svgBlob = new Blob([modifiedSvg], {type: 'image/svg+xml;charset=utf-8'});
-        maskMap.src = URL.createObjectURL(svgBlob);
-      });
-
-    let loadedImages = 0;
-    function checkLoad() {
-      loadedImages++;
-      if (loadedImages === 2) draw3DHolographicMap();
-    }
-    originalMap.onload = checkLoad;
-    maskMap.onload = checkLoad;
-
-    function draw3DHolographicMap() {
-
-      // 繪製基底線條 (Base Map)
-      bCtx.shadowColor = '#00ffff';
-      bCtx.shadowBlur = 5 * ZOOM_LEVEL; 
-      bCtx.drawImage(originalMap, 0, 0, width, height);
-
-      bCtx.shadowColor = 'rgba(0, 210, 255, 0.8)';
-      bCtx.shadowBlur = 15 * ZOOM_LEVEL;
-      bCtx.drawImage(originalMap, 0, 0, width, height);
-      bCtx.shadowBlur = 0;
-
-      // 繪製粒子效果 (Particle Map)
-      // A. 漸層邊緣遮罩
-      const edgeMaskCanvas = document.createElement('canvas');
-      edgeMaskCanvas.width = width; edgeMaskCanvas.height = height;
-      const edgeCtx = edgeMaskCanvas.getContext('2d');
-
-      // 畫上 100% 實心白色的地圖
-      edgeCtx.drawImage(maskMap, 0, 0, width, height);
-
-      // 加上模糊邊緣
-      edgeCtx.globalCompositeOperation = 'destination-out';
-      edgeCtx.filter = `blur(${20 * ZOOM_LEVEL}px)`; 
-      edgeCtx.globalAlpha = 0.88; // 限制的最低減去%
-
-      edgeCtx.drawImage(maskMap, 0, 0, width, height); // 擦除中心。所以內陸最深處保留最低的透明度
-
-      // 粒子網格
-      const patternCanvas = document.createElement('canvas');
-      const dotSpacing = 8 * (ZOOM_LEVEL / 2); // 點密度調整
-      patternCanvas.width = dotSpacing; patternCanvas.height = dotSpacing;
-      const patCtx = patternCanvas.getContext('2d');
-
-      patCtx.fillStyle = 'rgba(0, 210, 255, 0.6)'; 
-      patCtx.beginPath();
-      patCtx.arc(dotSpacing / 2, dotSpacing / 2, 3 * (ZOOM_LEVEL / 3), 0, Math.PI * 2); // 點大小
-      patCtx.fill();
-
-      // 將粒子與遮罩混合，畫在獨立的粒子畫布上
-      pCtx.fillStyle = pCtx.createPattern(patternCanvas, 'repeat');
-      pCtx.fillRect(0, 0, width, height);
-      
-      pCtx.globalCompositeOperation = 'destination-in';
-      pCtx.drawImage(edgeMaskCanvas, 0, 0, width, height);
-    }
-
-    // 3D 運鏡與置中邏輯
-    const mapWrapper = document.getElementById('mapWrapper');
-    const mapContainer = document.querySelector('.map-container');
-
-    // 確保 F1list2026.js 有正確載入
-    if (typeof f1Calendar2026 !== 'undefined') {
-      f1Calendar2026.forEach(race => {
-        // 建立光點 div
-        const pin = document.createElement('div');
-        pin.className = 'race-pin';
-        
-        // 🌟 核心修改 1：直接讀取 JS 檔案裡的 top 和 left 數字來定位
-        pin.style.top = `${race.top}%`;
-        pin.style.left = `${race.left}%`;
-        
-        // 🌟 核心修改 2：把真實資料綁定到 HTML 上 (讓右側面板可以讀取)
-        pin.setAttribute('data-title', race.title);
-        pin.setAttribute('data-date', race.date);
-        pin.setAttribute('data-desc', race.desc);
-        pin.setAttribute('data-img', race.img);
-        pin.setAttribute('data-link', race.link);
-
-        // 生成光點的雷達、核心與國家名稱
-        pin.innerHTML = `
-          <div class="pin-radar"></div>
-          <div class="pin-core"></div>
-          <div class="pin-label">${race.country}</div>
-        `;
-        
-        // 把光點加到地圖上
-        mapWrapper.appendChild(pin);
-      });
-    } else {
-      console.error("找不到 f1Calendar2026 資料，請檢查 F1list2026.js 是否正確引入！");
-    }
-
-    const pins = document.querySelectorAll('.race-pin');
-
-    // 抓取側邊面板的各個元素
-    const sidePanel = document.getElementById('sidePanel');
-    const panelTitle = document.getElementById('panelTitle');
-    const panelDate = document.getElementById('panelDate');
-    const panelDesc = document.getElementById('panelDesc');
-    const panelImg = document.getElementById('panelImg');
-    const panelClose = document.getElementById('panelClose');
-    const panelBtn = document.querySelector('.panel-btn');
-
-    pins.forEach(pin => {
-      pin.addEventListener('click', function(e) {
-        e.stopPropagation(); 
-
-        // 光點狀態切換 (PC 與手機版共通)
-        pins.forEach(p => { p.classList.remove('active'); p.classList.add('dimmed'); });
-        this.classList.add('active'); this.classList.remove('dimmed');
-
-        // ==========================================
-        // 判斷是否為 PC 版 (設定大於 768px 才會 Zoom-in)
-        // ==========================================
-        if (window.innerWidth > 768) {
-            const topVal = parseFloat(this.style.top);
-            const leftVal = parseFloat(this.style.left);
-            const moveX = 50 - leftVal; 
-            const moveY = 50 - topVal + 15; 
-
-            // 計算偏移量側邊欄寬200px。
-            const offsetPx = 200;
-
-            mapWrapper.style.transformOrigin = `${leftVal}% ${topVal}%`;
-            
-            // 使用 calc() 結合 % 與 px 進行精準向左偏移
-            mapWrapper.style.transform = `translate(calc(${moveX}% - ${offsetPx}px), ${moveY}%) scale(3) rotateX(50deg)`;
-
-            // 光點轉向，永遠正對鏡頭
-            pins.forEach(p => {
-              //p.style.transform = `translate(-50%, -50%)`;
-              
-              if(p.querySelector('.pin-core')){
-                p.querySelector('.pin-core').style.transform = `rotateX(0deg)`;
-              }
-              if(p.querySelector('.pin-label')){
-                // 注意：這裡使用 translate(-50%, 0px) 是為了維持原本 top:-25px 的高度設定
-                p.querySelector('.pin-label').style.transform = `translate(-50%, 0px) rotateX(-50deg)`;
-              }
-            });
-        }
-
-        // ==========================================
-        // 3. 讀取地點資料，並滑出右側面板 (PC 與手機版共通)
-        // ==========================================
-        panelTitle.textContent = this.getAttribute('data-title');
-        panelDate.textContent = this.getAttribute('data-date');
-        panelDesc.textContent = this.getAttribute('data-desc');
-        panelImg.style.backgroundImage = `url('${this.getAttribute('data-img')}')`;
-
-
-        // 🌟 新增：讀取行程連結並設定 VIEW DETAILS 按鈕
-        const linkUrl = this.getAttribute('data-link');
-        const panelBtn = document.querySelector('.panel-btn'); // 抓取按鈕元素
-
-        if (linkUrl && linkUrl !== "#") {
-          panelBtn.style.display = 'block'; // 如果有網址，顯示按鈕
-          panelBtn.onclick = () => {
-            window.open(linkUrl, '_blank'); // 點擊時開啟新分頁
-          };
-        } else {
-          panelBtn.style.display = 'none'; // 如果沒網址，自動隱藏按鈕以免誤點
-        }
-
-        sidePanel.classList.add('active'); // 呼叫面板滑入
-      });
-    });
-
-    // 關閉面版的共用函式
-    function closePanelAndResetMap() {
-      // 收起右側面板
-      sidePanel.classList.remove('active');
-      
-      // 退回平視角地圖（補上了 scale(1) 確保大小正確還原）
-      mapWrapper.style.transform = 'translate(0%, 0%) scale(1) rotateX(0deg)';
-      
-      pins.forEach(p => {
-        p.classList.remove('active', 'dimmed');
-        // 容器重製
-        //p.style.transform = 'translate(-50%, -50%) translateZ(0px)';
-        
-        // 加上 if 判斷保護
-        if(p.querySelector('.pin-core')){
-          p.querySelector('.pin-core').style.transform = 'rotateX(0deg)';
-        }
-        if(p.querySelector('.pin-label')){
-          p.querySelector('.pin-label').style.transform = 'translate(-50%, 0px) rotateX(0deg)';
-        }
-      });
-    }
-
-    // 點擊背景空白處，關閉面板並退回
-    mapContainer.addEventListener('click', closePanelAndResetMap);
-    
-    // 點擊面板上的 ✖ 按鈕，關閉面板並退回
-    panelClose.addEventListener('click', closePanelAndResetMap);
-
-  </script>
-
-  <script>
-  // ==========================================
-  //  底部流動煙
-  // ==========================================
-    const fogCanvas = document.getElementById('fogCanvas');
-    const fCtx = fogCanvas.getContext('2d');
-
-    function resizeFog() {
-      fogCanvas.width = window.innerWidth;
-      fogCanvas.height = window.innerHeight * 0.45; 
-    }
-    window.addEventListener('resize', resizeFog);
-    resizeFog();
-
-    // 1. 載入煙霧圖片
-    const smokeImage = new Image();
-    smokeImage.crossOrigin = "Anonymous";
-    // 這是一張國外開發者常用的高品質煙霧去背 PNG
-    smokeImage.src = './img/Smoke-Element.png';
-
-    // 等待真實材質載入完成後，才開始啟動引擎
-    smokeImage.onload = () => {
-      
-      // 離屏渲染染色 (白煙染色)
-      const tintedCanvas = document.createElement('canvas');
-      tintedCanvas.width = smokeImage.width;
-      tintedCanvas.height = smokeImage.height;
-      const tCtx = tintedCanvas.getContext('2d');
-      tCtx.drawImage(smokeImage, 0, 0);
-      tCtx.globalCompositeOperation = 'source-in'; // 只在有煙霧的地方填色
-      tCtx.fillStyle = '#465b6a'; // 改煙霧的顏色
-      tCtx.fillRect(0, 0, tintedCanvas.width, tintedCanvas.height);
-
-      // 2. 建立雲層陣列 (純左右交錯版)
-      const clouds = [];
-      const cloudCount = 45; 
-
-      for (let i = 0; i < cloudCount; i++) {
-        const layer = i % 3; 
-        let size, alpha;
-        
-        if (layer === 0) { 
-          size = Math.random() * 600 + 600; 
-          alpha = 0.08; 
-        } else if (layer === 1) { 
-          size = Math.random() * 400 + 300; 
-          alpha = 0.10; 
-        } else { 
-          size = Math.random() * 250 + 250; 
-          alpha = 0.12; 
-        }
-
-        const initialY = fogCanvas.height - (size * 0.4) + (Math.random() * 100 - 50);
-
-        clouds.push({
-          x: Math.random() * fogCanvas.width,
-          y: initialY, 
-          // 水平速度，隨機向左或向右
-          vx: (Math.random() - 0.5) * 0.5, 
-          size: size,
-          alpha: alpha,
-          rotation: Math.random() * Math.PI * 2,
-          rotSpeed: (Math.random() - 0.5) * 0.0015
-        });
-      }
-
-      // 3. 雲層流動動畫迴圈
-      function animateFog() {
-        fCtx.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
-        
-        fCtx.globalCompositeOperation = 'screen';
-
-        for (let p of clouds) {
-          // 只更新 X 軸位置
-          p.x += p.vx;
-          p.rotation += p.rotSpeed; 
-
-          // X 軸雙向無縫接軌
-          if (p.x > fogCanvas.width + p.size) {
-            p.x = -p.size;
-          } else if (p.x < -p.size) {
-            p.x = fogCanvas.width + p.size;
-          }
-
-          // 繪製這朵雲
-          fCtx.save();
-          fCtx.translate(p.x, p.y);
-          fCtx.rotate(p.rotation);
-          fCtx.globalAlpha = p.alpha;
-          fCtx.drawImage(tintedCanvas, -p.size / 2, -p.size / 2, p.size, p.size);
-          fCtx.restore();
-        }
-        
-        requestAnimationFrame(animateFog);
-      }
-      
-      // 啟動引擎
-      animateFog();
-    };
-  </script>
-
+<script src="main.js"></script>
 </body>
 </html>
