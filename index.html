@@ -579,18 +579,22 @@
      底部賽事橫向滑動清單
      ========================================== */
   .bottom-expand-menu {
+    --visible-count: 4;
+    --race-card-gap: 8px;
     position: fixed;
     bottom: 25px;
     left: 20px;
+    right: 20px;
     display: flex;
-    align-items: center; /* 讓按鈕和清單垂直對齊 */
+    align-items: center;
     gap: 10px;
     z-index: 50;
-    transition: 0.3s;
   }
 
-  /* 開關按鈕設計 */
+  /* 開關按鈕：寬度固定，避免 open 時影響 expand-race-list 可視寬 */
   .expand-toggle-btn {
+    flex: 0 0 auto;
+    width: auto;
     background: rgba(10, 15, 30, 0.85);
     border: 1px solid rgba(0, 210, 255, 1);
     color: #00d2ff;
@@ -598,54 +602,54 @@
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: 2px;
-    padding: 0 20px;
+    padding: 0 14px;
     cursor: pointer;
     backdrop-filter: blur(5px);
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: all 0.3s;
+    justify-content: center;
+    gap: 8px;
     height: var(--race-card-height);
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
     white-space: nowrap;
     z-index: 2;
+    overflow: hidden;
+    transition: background-color 0.3s, box-shadow 0.3s, color 0.3s;
   }
+
   .expand-toggle-btn:hover {
-    background: rgba(0, 210, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
-  }
-
-  .bottom-expand-menu.open{
-    left: 0;
-    transition: all 0.3s;
-  }
-
-  .bottom-expand-menu.open #expandToggleBtn{
-    width: auto;
-    padding: 0 12px 0 8px;
-    background-color: #00d2ff;
-  }
-
-  .bottom-expand-menu.open .btn-text{
-    display: none;
-    transition: all 0.3s;
+    background: linear-gradient(to top, rgba(0, 217, 255, 0.3), transparent);
+    box-shadow: 0 0 6px rgba(0, 210, 255, 0.5);
   }
   
   /* 開關箭頭動畫 */
   .btn-icon {
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    
+    flex: 0 0 auto;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   }
+
+  /* 打開時箭頭 */
   .bottom-expand-menu.open .btn-icon {
-    transform: scaleY(-1); /* 打開時箭頭朝左 ◀ */
-    color: #001621;
+    transform: scaleY(-1); 
+    color: #00e6ff;
+  }
+
+  .btn-text {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .bottom-expand-menu.open .btn-text {
+    opacity: 0;
+    transform: scale(0.92);
+    pointer-events: none;
+    display: none;
   }
 
   /* 核心動畫：卡片清單容器 (預設隱藏並縮短寬度) */
   .expand-race-list {
-    width: 100%;
-    max-width: 0;
-    opacity: 0;
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
     visibility: hidden;
     overflow-x: auto;
     overflow-y: hidden;
@@ -653,19 +657,18 @@
     scrollbar-width: none;
     cursor: grab;
     user-select: none;
+    overflow-anchor: none;
+  }
+
+  /*打開狀態*/
+  .bottom-expand-menu.open .expand-race-list {
+    width: auto;
+    visibility: visible;
   }
 
   .expand-race-list.is-dragging { cursor: grabbing; }
 
   .expand-race-list::-webkit-scrollbar { display: none; }
-
-  /* 當選單打開時，寬度伸展至視窗大小 */
-  .bottom-expand-menu.open .expand-race-list {
-    max-width: calc(100vw - 70px); /* 扣除左邊按鈕的寬度 */
-    opacity: 1;
-    visibility: visible;
-    padding-right: 20px; /* 避免右側貼死螢幕 */
-  }
 
   /* ==========================================
      🌟 底部容器 (防閃爍 + 滑鼠拖曳完整版)
@@ -699,21 +702,28 @@
 
   /* 獨立卡片設計 */
   .race-list-track {
-    --race-card-width: 220px;
-    --race-card-gap: 8px;
     display: flex;
     gap: var(--race-card-gap);
     width: max-content;
+    min-width: max-content;
     padding: 10px 0;
+    box-sizing: border-box;
+    visibility: hidden;
   }
 
-  .race-list-track .race-card.loop-card {
-    flex: 0 0 var(--race-card-width);
-    width: var(--race-card-width);
+  .expand-race-list.is-ready .race-list-track {
+    visibility: visible;
+  }
+
+  .race-list-track > .race-card {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
   }
   
   .race-card {
-    flex: 0 0 135px;
     height: 53px;
     background-color: #000;
     border: 1px solid rgba(0, 210, 255, 0.3);
@@ -724,6 +734,9 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+  }
+  .race-card,  .race-card.simplified, .race-list-track .race-card.loop-card {
+    box-sizing: border-box;
   }
 
   .race-card-bg {
@@ -752,7 +765,6 @@
   .race-card-date { color: #00d2ff; font-size: 0.8rem; font-weight: 600; }
 
   .race-card.simplified {
-    flex: 0 0 160px; /* PC版卡片寬度 */
     height: var(--race-card-height);    /* 高度拉出空間顯示賽道 */
     background-color: rgba(10, 15, 30, 0.5);
     border: 1px solid rgb(180 180 180 / 30%);
@@ -769,25 +781,32 @@
   /* 卡片預設狀態：稍微往下、透明、縮小一點 */
   .expand-race-list .race-card {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(14px);
     will-change: transform, opacity;
+    animation: none;
   }
-  /* menu 開啟後，所有卡片播放浮起動畫 */
-  .bottom-expand-menu.open .expand-race-list .race-card {
-    animation: raceCardFloatIn 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    animation-delay: calc(var(--card-order, 0) * 0.03s);
+
+  .expand-race-list.is-ready:not(.is-animate) .race-card {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .expand-race-list.is-ready.is-animate .race-card {
+    animation: raceCardFloatIn 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation-delay: calc(var(--card-order, 0) * 0.04s);
   }
 
   @keyframes raceCardFloatIn {
     0% {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(14px);
     }
     100% {
       opacity: 1;
       transform: translateY(0);
     }
   }
+
 
 
   /* 賽道圖背景 */
@@ -868,22 +887,35 @@
 
   /* 手機版適應 */
   @media (max-width: 768px) {
-      :root {
-        --race-card-height: 55px;
-      }
+    :root {
+      --race-card-height: 55px;
+    }
 
-    .bottom-expand-menu { bottom: 15px; left: 10px; }
-    .expand-toggle-btn { height: var(--race-card-height); padding: 0 15px; font-size: 1rem; }
-    .bottom-expand-menu.open .expand-race-list { max-width: calc(100vw - 50px); }
-    .race-card { flex: 0 0 150px; height: 80px; }
+    .bottom-expand-menu {
+      --visible-count: 3;
+      --race-card-gap: 5px;
+    }
+
+    .expand-toggle-btn {
+      flex: 0 0 96px;
+      width: 96px;
+      min-width: 96px;
+      max-width: 96px;
+    }
+
+    .race-card {
+      height: var(--race-card-height);
+      min-width: 0;
+    }
+
     .race-card-title {
       font-size: 0.85rem;
     }
+
     .race-card-date { font-size: 0.7rem; }
-    .race-card.simplified {
-      flex: 0 0 120px; 
+    /*.race-card.simplified {
       height: var(--race-card-height);    
-    }
+    }*/
     .race-card.simplified .race-card-title {
       font-size: 0.85rem;
     }
@@ -944,9 +976,13 @@
       <span class="btn-text">Schedule</span>
     </button>
     
-    <div class="expand-race-list" id="expandRaceList"></div>
+    <div id="expandRaceList" class="expand-race-list">
+      <div class="race-list-track">
+        <!-- cards -->
+      </div>
+    </div>
   </div>
 
-<script src="main.js"></script>
+<script type="module" src="main.js"></script>
 </body>
 </html>
