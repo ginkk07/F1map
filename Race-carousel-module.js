@@ -7,12 +7,17 @@ export class RaceCarousel {
       visibleCount: { desktop: 4, mobile: 3 },
       gap: { desktop: 8, mobile: 5 },
       alignInset: 0,
-      edgeBleed: 4,
       loop: true,
       snap: true,
       wheelEnabled: true,
       wheelDesktopOnly: true,
       dragThreshold: 6,
+      usePointerDrag: true,
+      observeResize: true,
+      useWindowResize: true,
+      clickSetsActive: true,
+      clickScrollIntoView: true,
+      fireCardClick: true,
       cardClassName: 'race-card simplified loop-card',
       cardRenderer: item => `
         <div class="race-card-bg" style="background-image: url('${item.trackMap || ''}')"></div>
@@ -52,11 +57,15 @@ export class RaceCarousel {
     this.snapTimer = null;
     this.resizeObserver = null;
     this.resizeRafId = 0;
+    this.openRafId = 0;
+    this.openSequence = 0;
     this.lastObservedRootWidth = 0;
+    this.lastAppliedLayoutSignature = '';
+    this.lastAppliedRootWidth = 0;
+    this.lastKnownScrollLeft = 0;
     this.programmaticScrollRafId = 0;
     this.programmaticScrollActive = false;
     this.programmaticTargetLeft = 0;
-    this.openRafId = 0;
     this.inertiaRafId = 0;
     this.inertiaActive = false;
     this.inertiaMode = '';
@@ -70,7 +79,6 @@ export class RaceCarousel {
       lastTime: 0,
       velocity: 0,
     };
-    this.trackPaddingLeft = 0;
 
     this.wheel = {
       velocity: 0,
@@ -86,10 +94,16 @@ export class RaceCarousel {
 
     this.root.addEventListener('scroll', this.boundScroll, { passive: true });
     this.root.addEventListener('wheel', this.boundWheel, { passive: false });
-    this.root.addEventListener('pointerdown', this.boundPointerDown);
-    window.addEventListener('pointermove', this.boundPointerMove);
-    window.addEventListener('pointerup', this.boundPointerUp);
-    window.addEventListener('resize', this.boundResize);
+
+    if (this.config.usePointerDrag) {
+      this.root.addEventListener('pointerdown', this.boundPointerDown);
+      window.addEventListener('pointermove', this.boundPointerMove);
+      window.addEventListener('pointerup', this.boundPointerUp);
+    }
+
+    if (this.config.useWindowResize) {
+      window.addEventListener('resize', this.boundResize);
+    }
   }
 
   resolveElement(target) {
@@ -114,13 +128,21 @@ export class RaceCarousel {
       : this.config.gap.desktop;
   }
 
+  getAlignInset() {
+    return Math.max(0, Number(this.config.alignInset) || 0);
+  }
+
+  usesNativeScrollerMode() {
+    return !this.config.loop && !this.config.snap && !this.config.usePointerDrag;
+  }
+
   getSlides() {
     return Array.from(this.track.querySelectorAll('[data-carousel-slide="1"]'));
   }
 
   getBodySlides() {
     const slides = this.getSlides();
-    if (!this.config.loop || !this.items.length) return slides;
+    if (!this.config.loop || !this.items.length || !this.cloneCount) return slides;
     return slides.slice(this.cloneCount, this.cloneCount + this.items.length);
   }
 
@@ -129,75 +151,77 @@ export class RaceCarousel {
     return slides[realIndex] || null;
   }
 
+  getLayoutWidth() {
+    const rectWidth = this.root.getBoundingClientRect().width || 0;
+    return rectWidth || this.root.clientWidth || 0;
+  }
+
+  getLayoutSignature(rootWidth = this.getLayoutWidth()) {
+    const normalizedWidth = Math.round(rootWidth * 100) / 100;
+    return [normalizedWidth, this.getVisibleCount(), this.getGap(), this.items.length].join(':');
+  }
+
+  getLoopCloneCount() {
+    if (!this.config.loop || this.items.length <= 1) return 0;
+    return Math.min(this.getVisibleCount() + 1, this.items.length);
+  }
+
   getSlideLeft(slide) {
     if (!slide) return 0;
 
+    const renderIndex = Number(slide.dataset.renderIndex);
+    if (Number.isFinite(renderIndex) && this.step > 0) {
+      return renderIndex * this.step;
+    }
+
     const slideRect = slide.getBoundingClientRect();
     const rootRect = this.root.getBoundingClientRect();
-
-    return Math.round((slideRect.left - rootRect.left) + this.root.scrollLeft - this.trackPaddingLeft);
-  }
-
-  getRenderedSlidesByRealIndex(realIndex) {
-    return this.getSlides().filter(
-      slide => Number(slide.dataset.realIndex) === Number(realIndex)
-    );
-  }
-
-  getNearestTargetSlide(realIndex) {
-    const bodySlide = this.getBodySlide(realIndex);
-    if (!this.config.loop || !this.items.length) return bodySlide;
-
-    const candidates = this.getRenderedSlidesByRealIndex(realIndex);
-    if (!candidates.length) return bodySlide;
-
-    const alignInset = Math.max(0, Number(this.config.alignInset) || 0);
-    const current = this.root.scrollLeft + alignInset;
-
-    return candidates.reduce((nearest, slide) => {
-      if (!nearest) return slide;
-
-      const currentDiff = Math.abs(current - this.getSlideLeft(slide));
-      const nearestDiff = Math.abs(current - this.getSlideLeft(nearest));
-      return currentDiff < nearestDiff ? slide : nearest;
-    }, bodySlide);
-  }
-
-  getLayoutWidth() {
-    const rectWidth = Math.round(this.root.getBoundingClientRect().width || 0);
-    const clientWidth = Math.round(this.root.clientWidth || 0);
-    const offsetWidth = Math.round(this.root.offsetWidth || 0);
-    return Math.max(rectWidth, clientWidth, offsetWidth, 0);
+    return (slideRect.left - rootRect.left) + this.root.scrollLeft;
   }
 
   getBodyStartOffset() {
-    const first = this.getBodySlide(0);
-    return first ? this.getSlideLeft(first) : 0;
+    if (!this.config.loop) {
+      return 0;
+    }
+
+    if (this.step > 0) {
+      return this.cloneCount * this.step;
+    }
+
+    const firstBodySlide = this.getBodySlide(0);
+    return firstBodySlide ? this.getSlideLeft(firstBodySlide) : 0;
+  }
+
+  getBodyAlignOffset() {
+    return this.getBodyStartOffset();
   }
 
   getSegmentWidth() {
-    if (!this.config.loop || !this.items.length) return 0;
+    if (!this.config.loop || !this.items.length || !this.step) return 0;
+    return this.items.length * this.step;
+  }
 
-    const slides = this.getSlides();
-    const firstBody = slides[this.cloneCount];
-    const firstTail = slides[this.cloneCount + this.items.length];
+  getBodyEndOffset() {
+    return this.getBodyStartOffset() + this.getSegmentWidth();
+  }
 
-    if (!firstBody || !firstTail) return 0;
-    return this.getSlideLeft(firstTail) - this.getSlideLeft(firstBody);
+  getPositionForRealIndex(realIndex) {
+    const safeIndex = Math.max(0, Math.min(this.items.length - 1, realIndex));
+    return this.getBodyStartOffset() + (safeIndex * this.step);
   }
 
   build(items = []) {
     this.items = Array.isArray(items) ? [...items] : [];
     this.track.innerHTML = '';
     this.rendered = [];
+    this.lastAppliedLayoutSignature = '';
+    this.lastAppliedRootWidth = 0;
 
     if (!this.items.length) return;
 
-    this.cloneCount = this.config.loop
-      ? Math.min(this.getVisibleCount(), this.items.length)
-      : 0;
+    this.cloneCount = this.getLoopCloneCount();
 
-    const headClones = this.config.loop
+    const headClones = this.cloneCount
       ? this.items.slice(-this.cloneCount).map((item, cloneSourceIndex) => ({
           item,
           realIndex: this.items.length - this.cloneCount + cloneSourceIndex,
@@ -211,7 +235,7 @@ export class RaceCarousel {
       clone: 'body',
     }));
 
-    const tailClones = this.config.loop
+    const tailClones = this.cloneCount
       ? this.items.slice(0, this.cloneCount).map((item, realIndex) => ({
           item,
           realIndex,
@@ -239,9 +263,15 @@ export class RaceCarousel {
           return;
         }
 
-        this.setActiveById(slide.dataset.itemId, true);
+        if (this.config.clickSetsActive) {
+          this.setActiveById(
+            slide.dataset.itemId,
+            this.config.clickScrollIntoView,
+            false
+          );
+        }
 
-        if (typeof this.config.onCardClick === 'function') {
+        if (this.config.fireCardClick && typeof this.config.onCardClick === 'function') {
           this.config.onCardClick(entry.item, slide, entry.realIndex, event);
         }
       });
@@ -249,46 +279,100 @@ export class RaceCarousel {
       this.track.appendChild(slide);
     });
 
-    this.applyLayout();
+    this.applyLayout(true);
     this.resetPosition(false);
   }
 
-  applyLayout() {
+  applyLayout(force = false) {
     const visibleCount = this.getVisibleCount();
     const gap = this.getGap();
     const rootWidth = this.getLayoutWidth();
-    const edgeBleed = Math.max(0, Number(this.config.edgeBleed) || 0);
+    const layoutSignature = this.getLayoutSignature(rootWidth);
 
     this.root.style.setProperty('--visible-count', String(visibleCount));
     this.root.style.setProperty('--race-card-gap', `${gap}px`);
 
-    if (!rootWidth || !visibleCount) return;
+    if (!rootWidth || !visibleCount) return false;
 
-    const usableWidth = Math.max(0, rootWidth - edgeBleed * 2);
-    const contentWidth = Math.max(0, usableWidth - gap * (visibleCount - 1));
-    this.slideWidth = Math.floor(contentWidth / visibleCount);
+    if (!force && layoutSignature === this.lastAppliedLayoutSignature) {
+      return true;
+    }
+
+    const layoutWidth = Math.max(0, rootWidth);
+    const totalGapWidth = gap * (visibleCount - 1);
+    const availableWidth = Math.max(0, layoutWidth - totalGapWidth);
+
+    this.slideWidth = Math.max(1, Math.floor(availableWidth / visibleCount));
     this.step = this.slideWidth + gap;
+    this.lastAppliedLayoutSignature = layoutSignature;
+    this.lastAppliedRootWidth = rootWidth;
 
     this.track.style.display = 'flex';
     this.track.style.gap = `${gap}px`;
     this.track.style.width = 'max-content';
     this.track.style.minWidth = 'max-content';
     this.track.style.boxSizing = 'border-box';
-    this.track.style.paddingLeft = `${edgeBleed}px`;
-    this.track.style.paddingRight = `${edgeBleed}px`;
-    this.trackPaddingLeft = edgeBleed;
+    this.track.style.paddingLeft = '0px';
+    this.track.style.paddingRight = '0px';
 
     this.getSlides().forEach(slide => {
       slide.style.flex = `0 0 ${this.slideWidth}px`;
       slide.style.width = `${this.slideWidth}px`;
-      slide.style.maxWidth = `${this.slideWidth}px`;
       slide.style.minWidth = `${this.slideWidth}px`;
+      slide.style.maxWidth = `${this.slideWidth}px`;
       slide.style.boxSizing = 'border-box';
     });
+
+    return true;
+  }
+
+  setScrollPosition(nextLeft, syncDragAnchor = false) {
+    if (!Number.isFinite(nextLeft)) return 0;
+
+    this.root.scrollLeft = nextLeft;
+    this.lastKnownScrollLeft = this.root.scrollLeft;
+    return this.normalizeLoopPosition(syncDragAnchor);
+  }
+
+  normalizeLoopPosition(syncDragAnchor = false) {
+    if (!this.config.loop || !this.items.length || !this.cloneCount || !this.step) return 0;
+
+    const segmentWidth = this.getSegmentWidth();
+    const bodyStart = this.getBodyStartOffset();
+    const bodyEnd = this.getBodyEndOffset();
+    if (!segmentWidth || bodyEnd <= bodyStart) return 0;
+
+    let current = this.root.scrollLeft;
+    let offset = 0;
+
+    while (current < bodyStart) {
+      current += segmentWidth;
+      offset += segmentWidth;
+    }
+
+    while (current >= bodyEnd) {
+      current -= segmentWidth;
+      offset -= segmentWidth;
+    }
+
+    if (!offset) return 0;
+
+    this.root.scrollLeft = current;
+    this.lastKnownScrollLeft = current;
+
+    if (syncDragAnchor && this.drag.active) {
+      this.drag.startScrollLeft += offset;
+    }
+
+    if (this.programmaticScrollActive) {
+      this.programmaticTargetLeft += offset;
+    }
+
+    return offset;
   }
 
   resetPosition(keepActive = true) {
-    if (!this.items.length) return;
+    if (!this.items.length || !this.step) return;
 
     if (keepActive && this.activeId) {
       this.scrollToId(this.activeId, false);
@@ -297,7 +381,13 @@ export class RaceCarousel {
 
     this.stopProgrammaticScroll();
     this.stopInertiaScroll();
-    this.scrollToLeft(this.getBodyStartOffset(), false);
+
+    if (this.usesNativeScrollerMode() && this.lastKnownScrollLeft > 0) {
+      this.scrollToLeft(this.lastKnownScrollLeft, false);
+      return;
+    }
+
+    this.scrollToLeft(this.getBodyAlignOffset(), false);
   }
 
   stopProgrammaticScroll() {
@@ -315,6 +405,8 @@ export class RaceCarousel {
   }
 
   startInertiaScroll() {
+    if (!this.config.usePointerDrag) return;
+
     const minVelocity = 0.02;
 
     if (Math.abs(this.drag.velocity) < minVelocity) {
@@ -339,8 +431,7 @@ export class RaceCarousel {
       const dt = Math.min(34, Math.max(1, now - lastTime));
       lastTime = now;
 
-      this.root.scrollLeft += this.drag.velocity * dt;
-      this.normalizeLoopPosition();
+      this.setScrollPosition(this.root.scrollLeft + this.drag.velocity * dt);
 
       const friction = Math.pow(0.92, dt / 16.667);
       this.drag.velocity *= friction;
@@ -388,8 +479,7 @@ export class RaceCarousel {
       const dt = Math.min(34, Math.max(1, now - lastTime));
       lastTime = now;
 
-      this.root.scrollLeft += this.wheel.velocity * dt;
-      this.normalizeLoopPosition();
+      this.setScrollPosition(this.root.scrollLeft + this.wheel.velocity * dt);
 
       const friction = Math.pow(0.94, dt / 16.667);
       this.wheel.velocity *= friction;
@@ -419,7 +509,7 @@ export class RaceCarousel {
 
       const diff = Math.abs(this.root.scrollLeft - this.programmaticTargetLeft);
       if (diff <= 1) {
-        this.normalizeLoopPosition();
+        this.setScrollPosition(this.programmaticTargetLeft);
         this.stopProgrammaticScroll();
         return;
       }
@@ -431,8 +521,8 @@ export class RaceCarousel {
   }
 
   startObserveRoot() {
-    if (this.resizeObserver) return;
-    if (typeof ResizeObserver === 'undefined') return;
+    if (!this.config.observeResize) return;
+    if (this.resizeObserver || typeof ResizeObserver === 'undefined') return;
 
     this.lastObservedRootWidth = this.getLayoutWidth();
 
@@ -443,14 +533,21 @@ export class RaceCarousel {
 
       const width = this.getLayoutWidth();
       if (!width) return;
-      if (width === this.lastObservedRootWidth) return;
+      if (Math.abs(width - this.lastObservedRootWidth) < 0.5) return;
 
       this.lastObservedRootWidth = width;
 
       cancelAnimationFrame(this.resizeRafId);
       this.resizeRafId = requestAnimationFrame(() => {
         const currentActiveId = this.activeId;
+        const currentScrollLeft = this.root.scrollLeft;
         this.applyLayout();
+
+        if (this.usesNativeScrollerMode()) {
+          this.root.scrollLeft = Math.max(0, currentScrollLeft);
+          this.lastKnownScrollLeft = this.root.scrollLeft;
+          return;
+        }
 
         if (currentActiveId) {
           this.scrollToId(currentActiveId, false);
@@ -476,46 +573,74 @@ export class RaceCarousel {
   open() {
     this.isOpen = true;
     this.startObserveRoot();
+    this.openSequence += 1;
+    const openSequence = this.openSequence;
 
     cancelAnimationFrame(this.openRafId);
 
-    let lastWidth = -1;
-    let stableCount = 0;
+    return new Promise(resolve => {
+      let lastSignature = '';
+      let stableCount = 0;
 
-    const syncOpenLayout = (attempt = 0) => {
-      if (!this.isOpen) return;
+      const finish = opened => {
+        if (openSequence !== this.openSequence) {
+          resolve(false);
+          return;
+        }
 
-      const rootWidth = this.getLayoutWidth();
-      if (!rootWidth && attempt < 12) {
-        this.openRafId = requestAnimationFrame(() => syncOpenLayout(attempt + 1));
-        return;
-      }
+        this.openRafId = 0;
+        requestAnimationFrame(() => {
+          if (opened) {
+            this.applyLayout(true);
+            this.resetPosition(true);
+            this.updateActiveClasses();
+          }
+          resolve(opened);
+        });
+      };
 
-      if (rootWidth === lastWidth) {
-        stableCount += 1;
-      } else {
-        stableCount = 0;
-        lastWidth = rootWidth;
-      }
+      const syncOpenLayout = (attempt = 0) => {
+        if (!this.isOpen || openSequence !== this.openSequence) {
+          finish(false);
+          return;
+        }
 
-      if (stableCount < 1 && attempt < 12) {
-        this.openRafId = requestAnimationFrame(() => syncOpenLayout(attempt + 1));
-        return;
-      }
+        const rootWidth = this.getLayoutWidth();
+        const layoutSignature = this.getLayoutSignature(rootWidth);
 
-      this.lastObservedRootWidth = rootWidth;
-      this.applyLayout();
-      this.resetPosition(true);
-      this.updateActiveClasses();
-      this.openRafId = 0;
-    };
+        if (!rootWidth && attempt < 36) {
+          this.openRafId = requestAnimationFrame(() => syncOpenLayout(attempt + 1));
+          return;
+        }
 
-    this.openRafId = requestAnimationFrame(() => syncOpenLayout());
+        if (layoutSignature === lastSignature) {
+          stableCount += 1;
+        } else {
+          stableCount = 0;
+          lastSignature = layoutSignature;
+        }
+
+        const layoutReady = this.applyLayout(true);
+        if ((!layoutReady || stableCount < 3) && attempt < 36) {
+          this.openRafId = requestAnimationFrame(() => syncOpenLayout(attempt + 1));
+          return;
+        }
+
+        this.lastObservedRootWidth = rootWidth;
+        this.resetPosition(true);
+        this.updateActiveClasses();
+        finish(true);
+      };
+
+      this.openRafId = requestAnimationFrame(() => syncOpenLayout());
+    });
   }
 
   close() {
     this.isOpen = false;
+    this.openSequence += 1;
     this.clearSnapTimer();
+    this.stopProgrammaticScroll();
     this.stopInertiaScroll();
     cancelAnimationFrame(this.openRafId);
     this.openRafId = 0;
@@ -523,7 +648,7 @@ export class RaceCarousel {
   }
 
   refreshAfterOpen() {
-    this.open();
+    return this.open();
   }
 
   clearSnapTimer() {
@@ -540,70 +665,26 @@ export class RaceCarousel {
     }, delay);
   }
 
-  normalizeLoopPosition(syncDragAnchor = false) {
-    if (!this.config.loop || !this.items.length) return 0;
-
-    const segmentWidth = this.getSegmentWidth();
-    const slides = this.getSlides();
-    const firstHead = slides[0];
-    const firstTail = slides[this.cloneCount + this.items.length];
-    const current = this.root.scrollLeft;
-
-    if (!segmentWidth || !firstHead || !firstTail) return 0;
-
-    const minBoundary = this.getSlideLeft(firstHead);
-    const maxBoundary = this.getSlideLeft(firstTail);
-
-    let offset = 0;
-
-    if (current <= minBoundary + 1) {
-      offset = segmentWidth;
-    } else if (current >= maxBoundary - 1) {
-      offset = -segmentWidth;
-    }
-
-    if (!offset) return 0;
-
-    this.root.scrollLeft = current + offset;
-
-    if (syncDragAnchor && this.drag.active) {
-      this.drag.startScrollLeft += offset;
-    }
-
-    return offset;
-  }
-
   getNearestSnapSlide() {
-    if (!this.items.length) return null;
+    if (!this.items.length || !this.step) return null;
 
-    const slides = this.getSlides();
-    const alignInset = Math.max(0, Number(this.config.alignInset) || 0);
-    const current = this.root.scrollLeft + alignInset;
+    const relative = this.root.scrollLeft - this.getBodyStartOffset();
+    const nearestIndex = Math.max(
+      0,
+      Math.min(this.items.length - 1, Math.round(relative / this.step))
+    );
 
-    let nearestSlide = null;
-    let nearestDiff = Infinity;
-
-    slides.forEach(slide => {
-      const diff = Math.abs(current - this.getSlideLeft(slide));
-      if (diff < nearestDiff) {
-        nearestDiff = diff;
-        nearestSlide = slide;
-      }
-    });
-
-    return nearestSlide;
+    return this.getBodySlide(nearestIndex);
   }
 
   scrollToLeft(targetLeft, smooth = false) {
     if (!Number.isFinite(targetLeft)) return;
 
-    const alignInset = Math.max(0, Number(this.config.alignInset) || 0);
-    const alignedLeft = Math.max(0, Math.round(targetLeft - alignInset));
+    const alignedLeft = Math.max(0, targetLeft - this.getAlignInset());
 
     if (!smooth) {
       this.stopProgrammaticScroll();
-      this.root.scrollLeft = alignedLeft;
-      this.normalizeLoopPosition();
+      this.setScrollPosition(alignedLeft);
       return;
     }
 
@@ -618,7 +699,7 @@ export class RaceCarousel {
   }
 
   snapToNearest() {
-    if (!this.items.length) return;
+    if (!this.config.snap || !this.items.length) return;
 
     const targetSlide = this.getNearestSnapSlide();
     if (!targetSlide) return;
@@ -627,13 +708,11 @@ export class RaceCarousel {
   }
 
   scrollToIndex(index, smooth = false) {
-    if (!this.items.length) return;
+    if (!this.items.length || !this.step) return;
 
     const safeIndex = Math.max(0, Math.min(this.items.length - 1, index));
-    const target = this.getNearestTargetSlide(safeIndex);
-    if (!target) return;
-
-    this.scrollToLeft(this.getSlideLeft(target), smooth);
+    const targetLeft = this.getPositionForRealIndex(safeIndex);
+    this.scrollToLeft(targetLeft, smooth);
   }
 
   scrollToId(id, smooth = false) {
@@ -684,11 +763,12 @@ export class RaceCarousel {
       return;
     }
 
-    this.setActiveById(id, true);
+    this.setActiveById(id, false);
   }
 
   handleScroll() {
     if (!this.isOpen) return;
+    this.lastKnownScrollLeft = this.root.scrollLeft;
     if (this.drag.active) return;
     if (this.programmaticScrollActive) return;
     if (this.inertiaActive) return;
@@ -714,8 +794,7 @@ export class RaceCarousel {
     const immediateDelta = event.deltaY * 0.35;
     const wheelVelocity = event.deltaY / dt;
 
-    this.root.scrollLeft += immediateDelta;
-    this.normalizeLoopPosition();
+    this.setScrollPosition(this.root.scrollLeft + immediateDelta);
 
     if (this.inertiaActive && this.inertiaMode === 'wheel') {
       this.wheel.velocity = this.wheel.velocity * 0.75 + wheelVelocity * 0.45;
@@ -728,6 +807,7 @@ export class RaceCarousel {
   }
 
   handlePointerDown(event) {
+    if (!this.config.usePointerDrag) return;
     if (event.button !== 0) return;
 
     this.stopProgrammaticScroll();
@@ -744,6 +824,7 @@ export class RaceCarousel {
   }
 
   handlePointerMove(event) {
+    if (!this.config.usePointerDrag) return;
     if (!this.drag.active) return;
 
     const dx = event.clientX - this.drag.startX;
@@ -758,11 +839,11 @@ export class RaceCarousel {
     this.drag.lastX = event.clientX;
     this.drag.lastTime = event.timeStamp || performance.now();
 
-    this.root.scrollLeft = this.drag.startScrollLeft - dx;
-    this.normalizeLoopPosition(true);
+    this.setScrollPosition(this.drag.startScrollLeft - dx, true);
   }
 
   handlePointerUp() {
+    if (!this.config.usePointerDrag) return;
     if (!this.drag.active) return;
 
     this.drag.active = false;
@@ -785,8 +866,15 @@ export class RaceCarousel {
     if (!this.isOpen) return;
 
     const currentActiveId = this.activeId;
+    const currentScrollLeft = this.root.scrollLeft;
     this.lastObservedRootWidth = this.getLayoutWidth();
-    this.applyLayout();
+    this.applyLayout(true);
+
+    if (this.usesNativeScrollerMode()) {
+      this.root.scrollLeft = Math.max(0, currentScrollLeft);
+      this.lastKnownScrollLeft = this.root.scrollLeft;
+      return;
+    }
 
     if (currentActiveId) {
       this.scrollToId(currentActiveId, false);
@@ -804,9 +892,15 @@ export class RaceCarousel {
     this.stopObserveRoot();
     this.root.removeEventListener('scroll', this.boundScroll);
     this.root.removeEventListener('wheel', this.boundWheel);
-    this.root.removeEventListener('pointerdown', this.boundPointerDown);
-    window.removeEventListener('pointermove', this.boundPointerMove);
-    window.removeEventListener('pointerup', this.boundPointerUp);
-    window.removeEventListener('resize', this.boundResize);
+
+    if (this.config.usePointerDrag) {
+      this.root.removeEventListener('pointerdown', this.boundPointerDown);
+      window.removeEventListener('pointermove', this.boundPointerMove);
+      window.removeEventListener('pointerup', this.boundPointerUp);
+    }
+
+    if (this.config.useWindowResize) {
+      window.removeEventListener('resize', this.boundResize);
+    }
   }
 }

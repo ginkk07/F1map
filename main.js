@@ -1,4 +1,5 @@
 import { RaceCarousel } from './race-carousel-module.js';
+
 (() => {
   'use strict';
 
@@ -11,6 +12,8 @@ import { RaceCarousel } from './race-carousel-module.js';
     desktopFocusOffsetY: 15,
     desktopScale: 3,
     desktopRotateX: 50,
+    mobileMapScale: 2.8,
+    mobileFocusOffsetY: 10,
     listVisibleCount: {
       desktop: 4,
       mobile: 3,
@@ -19,13 +22,27 @@ import { RaceCarousel } from './race-carousel-module.js';
       desktop: 8,
       mobile: 5,
     },
+    scheduleLayoutMaxChecks: 24,
+    scheduleLayoutStableFrames: 2,
+    mobileScheduleDelayMs: 2000,
+    mobileScrollSyncDelayMs: 180,
   };
 
   const state = {
     pins: [],
     activePin: null,
     carousel: null,
-    scheduleRevealPending: false,
+    carouselModeKey: '',
+    scheduleRevealToken: 0,
+    scheduleRevealRafId: 0,
+    mobileScheduleTimer: 0,
+    mobileScrollSyncTimer: 0,
+    mobileActiveSyncRafId: 0,
+    mobilePreviewId: '',
+    mobileScheduleStarted: false,
+    mapLoaded: false,
+    mobileDetailBtn: null,
+    modeKey: '',
   };
 
   const dom = {
@@ -58,15 +75,47 @@ import { RaceCarousel } from './race-carousel-module.js';
       ? f1Calendar2026
       : null);
 
+  function isMobileView() {
+    return window.innerWidth <= CONFIG.desktopBreakpoint;
+  }
+
+  function getModeKey() {
+    return isMobileView() ? 'mobile' : 'desktop';
+  }
+
+  function getPinByRaceId(raceId) {
+    return state.pins.find(item => item.dataset.id === String(raceId)) || null;
+  }
+
   function init() {
     if (!validateRequiredDom()) return;
 
+    state.modeKey = getModeKey();
+
     setupMapCanvas();
     buildRacePins();
-    setupCarousel();
+    setupCarousel(state.modeKey);
+    createMobileDetailButton();
+    applyResponsiveMapInteraction();
+    applyResponsiveSidePanelState();
     bindEvents();
-    loadAndDrawMap();
     initFog();
+
+    if (state.modeKey === 'mobile') {
+      mobileController.prepareInitialView();
+    } else {
+      desktopController.prepareInitialView();
+    }
+
+    loadAndDrawMap().finally(() => {
+      state.mapLoaded = true;
+
+      if (state.modeKey === 'mobile') {
+        mobileController.handleAfterMapLoad();
+      } else {
+        desktopController.handleAfterMapLoad();
+      }
+    });
   }
 
   function validateRequiredDom() {
@@ -229,24 +278,75 @@ import { RaceCarousel } from './race-carousel-module.js';
     `;
 
     pin.addEventListener('click', event => {
+      if (isMobileView()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       event.stopPropagation();
-      activateRace(pin);
+      desktopController.handlePinClick(pin);
     });
 
     return pin;
   }
 
-  function setupCarousel() {
-    state.carousel = new RaceCarousel({
+  function getFocusConfig(modeKey) {
+    if (modeKey === 'desktop') {
+      return {
+        offsetX: CONFIG.desktopFocusOffsetX,
+        offsetY: CONFIG.desktopFocusOffsetY,
+        scale: CONFIG.desktopScale,
+        rotateX: CONFIG.desktopRotateX,
+      };
+    }
+
+    return {
+      offsetX: 0,
+      offsetY: CONFIG.mobileFocusOffsetY,
+      scale: CONFIG.mobileMapScale,
+      rotateX: 0,
+    };
+  }
+
+  function zoomToRace(pin, modeKey) {
+    const top = parseFloat(pin.style.top);
+    const left = parseFloat(pin.style.left);
+    const moveX = 50 - left;
+    const moveY = 50 - top + getFocusConfig(modeKey).offsetY;
+    const focus = getFocusConfig(modeKey);
+
+    dom.mapWrapper.style.transformOrigin = `${left}% ${top}%`;
+    dom.mapWrapper.style.transform = `
+      translate(calc(${moveX}% - ${focus.offsetX}px), ${moveY}%)
+      scale(${focus.scale})
+      rotateX(${focus.rotateX}deg)
+    `;
+
+    if (modeKey === 'mobile') {
+      resetPinFacing();
+    }
+  }
+
+  function createCarouselConfig(modeKey) {
+    const isMobileMode = modeKey === 'mobile';
+
+    return {
       root: dom.expandRaceList,
       track: '.race-list-track',
       visibleCount: CONFIG.listVisibleCount,
       gap: CONFIG.listGap,
       breakpoint: CONFIG.desktopBreakpoint,
-      loop: true,
-      snap: true,
-      wheelEnabled: true,
-      wheelDesktopOnly: true,
+      loop: !isMobileMode,
+      snap: !isMobileMode,
+      wheelEnabled: !isMobileMode,
+      wheelDesktopOnly: !isMobileMode,
+      usePointerDrag: !isMobileMode,
+      observeResize: !isMobileMode,
+      useWindowResize: !isMobileMode,
+      clickSetsActive: !isMobileMode,
+      clickScrollIntoView: !isMobileMode,
+      fireCardClick: !isMobileMode,
       cardClassName: 'race-card simplified loop-card',
       cardRenderer: race => `
         <div class="race-card-bg" style="background-image: url('${race.trackMap || ''}')"></div>
@@ -255,29 +355,46 @@ import { RaceCarousel } from './race-carousel-module.js';
         </div>
       `,
       getItemId: race => String(race.id),
-      onCardClick: race => {
-        const pin = state.pins.find(item => item.dataset.id === String(race.id));
-        if (pin) pin.click();
-      },
-    });
-
-    state.carousel.build(raceData);
-    dom.expandRaceList.classList.remove('is-ready', 'is-animate');
+      onCardClick: isMobileMode
+        ? null
+        : race => {
+            desktopController.handleCarouselCardClick(race);
+          },
+    };
   }
 
-  function activateRace(pin) {
+  function setupCarousel(modeKey = state.modeKey) {
+    const activeId = state.activePin?.dataset?.id || '';
+
+    if (state.carousel) {
+      state.carousel.destroy();
+      state.carousel = null;
+    }
+
+    state.carouselModeKey = modeKey;
+    state.carousel = new RaceCarousel(createCarouselConfig(modeKey));
+    state.carousel.build(raceData);
+
+    if (activeId) {
+      state.carousel.setActiveById(activeId, false);
+    }
+
+    applyResponsiveCarouselSnap();
+    resetScheduleVisualState();
+  }
+
+  function setActivePin(pin) {
     state.activePin = pin;
     updatePinStates(pin);
-    focusMapOnPin(pin);
-    populateSidePanel(pin);
-    openSidePanel();
+    updateMobileDetailButton();
+  }
 
-    const wasOpen = dom.bottomExpandMenu.classList.contains('open');
-    openScheduleIfNeeded();
-
-    if (wasOpen) {
-      state.carousel?.syncActive(pin.dataset.id);
-    }
+  function clearActiveRace() {
+    state.activePin = null;
+    state.mobilePreviewId = '';
+    state.pins.forEach(pin => pin.classList.remove('active', 'dimmed'));
+    state.carousel?.clearActive(false);
+    updateMobileDetailButton();
   }
 
   function updatePinStates(activePin) {
@@ -287,23 +404,8 @@ import { RaceCarousel } from './race-carousel-module.js';
     });
   }
 
-  function focusMapOnPin(pin) {
-    if (window.innerWidth <= CONFIG.desktopBreakpoint) {
-      resetPinFacing();
-      return;
-    }
-
-    const top = parseFloat(pin.style.top);
-    const left = parseFloat(pin.style.left);
-    const moveX = 50 - left;
-    const moveY = 50 - top + CONFIG.desktopFocusOffsetY;
-
-    dom.mapWrapper.style.transformOrigin = `${left}% ${top}%`;
-    dom.mapWrapper.style.transform = `
-      translate(calc(${moveX}% - ${CONFIG.desktopFocusOffsetX}px), ${moveY}%)
-      scale(${CONFIG.desktopScale})
-      rotateX(${CONFIG.desktopRotateX}deg)
-    `;
+  function resetMapTransform() {
+    dom.mapWrapper.style.transform = 'translate(0,0) scale(1) rotateX(0deg)';
   }
 
   function populateSidePanel(pin) {
@@ -325,12 +427,14 @@ import { RaceCarousel } from './race-carousel-module.js';
     dom.sidePanel.classList.add('active');
   }
 
-  function closePanelAndResetMap() {
+  function closeSidePanel() {
     dom.sidePanel.classList.remove('active');
-    dom.mapWrapper.style.transform = 'translate(0,0) scale(1) rotateX(0deg)';
-    state.pins.forEach(pin => pin.classList.remove('active', 'dimmed'));
-    state.activePin = null;
-    state.carousel?.syncActive(null);
+  }
+
+  function closeDesktopPanelAndResetMap() {
+    closeSidePanel();
+    resetMapTransform();
+    clearActiveRace();
   }
 
   function resetPinFacing() {
@@ -342,83 +446,507 @@ import { RaceCarousel } from './race-carousel-module.js';
     });
   }
 
-  function resetScheduleVisualState() {
-    dom.expandRaceList.classList.remove('is-ready', 'is-animate');
+  function createMobileDetailButton() {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Open race information');
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+      </svg>
+    `;
+
+    Object.assign(btn.style, {
+      position: 'absolute',
+      right: '18px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: '54px',
+      height: '54px',
+      borderRadius: '999px',
+      border: '1px solid rgba(255,255,255,0.15)',
+      background: 'rgba(255,255,255,0.28)',
+      color: '#111',
+      display: 'none',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: '60',
+      backdropFilter: 'blur(6px)',
+      WebkitBackdropFilter: 'blur(6px)',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+      cursor: 'pointer',
+      padding: '0',
+    });
+
+    btn.addEventListener('click', event => {
+      event.stopPropagation();
+      openActiveRaceSidePanel();
+    });
+
+    state.mobileDetailBtn = btn;
+    dom.mapContainer.appendChild(btn);
+    updateMobileDetailButton();
   }
 
-  function finalizeScheduleOpen() {
-    if (!dom.bottomExpandMenu.classList.contains('open')) return;
-    if (!state.scheduleRevealPending) return;
+  function updateMobileDetailButton() {
+    if (!state.mobileDetailBtn) return;
 
-    state.scheduleRevealPending = false;
+    const shouldShow = isMobileView() && !!state.activePin;
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        state.carousel?.refreshAfterOpen();
+    state.mobileDetailBtn.style.display = shouldShow ? 'flex' : 'none';
+  }
 
-        if (state.activePin) {
-          state.carousel?.syncActive(state.activePin.dataset.id);
-        } else {
-          state.carousel?.resetPosition(false);
-        }
+  function applyResponsiveSidePanelState() {
+    dom.sidePanel.style.pointerEvents = '';
+    dom.sidePanel.style.visibility = '';
+    dom.sidePanel.style.opacity = '';
+  }
 
-        dom.expandRaceList.classList.add('is-ready');
+  function applyResponsiveMapInteraction() {
+    const disableMapHit = isMobileView();
 
-        requestAnimationFrame(() => {
-          dom.expandRaceList.classList.add('is-animate');
-        });
-      });
+    dom.mapWrapper.style.pointerEvents = disableMapHit ? 'none' : '';
+
+    state.pins.forEach(pin => {
+      pin.style.pointerEvents = disableMapHit ? 'none' : '';
+      pin.style.touchAction = disableMapHit ? 'none' : '';
     });
   }
 
-  function openScheduleIfNeeded() {
-    const wasOpen = dom.bottomExpandMenu.classList.contains('open');
-    if (wasOpen) return;
-
-    resetScheduleVisualState();
-    state.scheduleRevealPending = true;
-    dom.bottomExpandMenu.classList.add('open');
-    state.carousel?.open();
+  function openActiveRaceSidePanel() {
+    if (!state.activePin) return;
+    populateSidePanel(state.activePin);
+    openSidePanel();
   }
 
-  function toggleSchedule() {
-    const willOpen = !dom.bottomExpandMenu.classList.contains('open');
-    dom.bottomExpandMenu.classList.toggle('open', willOpen);
+  function openActiveRaceDetailPage() {
+    if (!state.activePin) return;
+    const link = state.activePin.dataset.link || '';
+    if (!link || link === '#') return;
+    window.location.href = link;
+  }
 
-    if (willOpen) {
-      resetScheduleVisualState();
-      state.scheduleRevealPending = true;
-      state.carousel?.open();
+  function applyScheduleHiddenStyles() {
+    dom.expandRaceList.style.visibility = 'hidden';
+    dom.expandRaceList.style.opacity = '0';
+    dom.expandRaceList.style.pointerEvents = 'none';
+  }
+
+  function clearScheduleInlineStyles() {
+    dom.expandRaceList.style.visibility = '';
+    dom.expandRaceList.style.opacity = '';
+    dom.expandRaceList.style.pointerEvents = '';
+  }
+
+  function resetScheduleVisualState() {
+    dom.expandRaceList.classList.remove('is-ready', 'is-animate');
+    applyScheduleHiddenStyles();
+  }
+
+  function primeCarouselOpenState() {
+    if (state.activePin) {
+      state.carousel?.setActiveById(state.activePin.dataset.id, false);
     } else {
-      state.scheduleRevealPending = false;
-      resetScheduleVisualState();
-      state.carousel?.close();
+      state.carousel?.clearActive(false);
     }
   }
 
+  function beginScheduleRevealCycle() {
+    state.scheduleRevealToken += 1;
+    cancelAnimationFrame(state.scheduleRevealRafId);
+    state.scheduleRevealRafId = 0;
+    clearTimeout(state.mobileScheduleTimer);
+    state.mobileScheduleTimer = 0;
+    clearTimeout(state.mobileScrollSyncTimer);
+    state.mobileScrollSyncTimer = 0;
+    cancelAnimationFrame(state.mobileActiveSyncRafId);
+    state.mobileActiveSyncRafId = 0;
+    state.mobilePreviewId = '';
+    return state.scheduleRevealToken;
+  }
+
+  function getScheduleMetrics() {
+    const rootWidth = Math.round(dom.expandRaceList.getBoundingClientRect().width || 0);
+    const clientWidth = Math.round(dom.expandRaceList.clientWidth || 0);
+    const scrollWidth = Math.round(dom.expandRaceList.scrollWidth || 0);
+    const firstCard = dom.expandRaceList.querySelector('.race-card');
+    const cardWidth = Math.round(firstCard?.getBoundingClientRect().width || 0);
+
+    return {
+      rootWidth,
+      clientWidth,
+      scrollWidth,
+      cardWidth,
+    };
+  }
+
+  function revealSchedule() {
+    clearScheduleInlineStyles();
+    dom.expandRaceList.classList.add('is-ready');
+
+    requestAnimationFrame(() => {
+      if (!dom.bottomExpandMenu.classList.contains('open')) return;
+      dom.expandRaceList.classList.add('is-animate');
+
+      if (state.modeKey === 'mobile') {
+        mobileController.afterScheduleReveal();
+      } else {
+        desktopController.afterScheduleReveal();
+      }
+    });
+  }
+
+  function waitForScheduleLayout(token, attempt = 0, lastSignature = '', stableCount = 0) {
+    if (token !== state.scheduleRevealToken) return;
+    if (!dom.bottomExpandMenu.classList.contains('open')) return;
+
+    const { rootWidth, clientWidth, scrollWidth, cardWidth } = getScheduleMetrics();
+    const ready = rootWidth > 0 && clientWidth > 0 && scrollWidth > 0 && cardWidth > 0;
+    const signature = `${rootWidth}:${clientWidth}:${scrollWidth}:${cardWidth}`;
+
+    let nextStableCount = 0;
+    if (ready && signature === lastSignature) {
+      nextStableCount = stableCount + 1;
+    }
+
+    if (ready && nextStableCount >= CONFIG.scheduleLayoutStableFrames) {
+      state.scheduleRevealRafId = 0;
+      revealSchedule();
+      return;
+    }
+
+    if (attempt >= CONFIG.scheduleLayoutMaxChecks) {
+      state.scheduleRevealRafId = 0;
+      if (ready) revealSchedule();
+      return;
+    }
+
+    state.scheduleRevealRafId = requestAnimationFrame(() => {
+      waitForScheduleLayout(token, attempt + 1, signature, ready ? nextStableCount : 0);
+    });
+  }
+
+  function queueScheduleReveal(token = state.scheduleRevealToken) {
+    cancelAnimationFrame(state.scheduleRevealRafId);
+    state.scheduleRevealRafId = requestAnimationFrame(() => {
+      waitForScheduleLayout(token);
+    });
+  }
+
+  function openScheduleInternal() {
+    const token = beginScheduleRevealCycle();
+    resetScheduleVisualState();
+    dom.bottomExpandMenu.classList.add('open');
+    primeCarouselOpenState();
+
+    Promise.resolve(state.carousel?.open()).then(opened => {
+      if (token !== state.scheduleRevealToken) return;
+      if (!dom.bottomExpandMenu.classList.contains('open')) return;
+      if (opened === false) return;
+      queueScheduleReveal(token);
+    });
+  }
+
+  function closeScheduleInternal() {
+    beginScheduleRevealCycle();
+    resetScheduleVisualState();
+    dom.bottomExpandMenu.classList.remove('open');
+    state.carousel?.close();
+    clearScheduleInlineStyles();
+  }
+
+  function applyResponsiveCarouselSnap() {
+    const cards = dom.expandRaceList.querySelectorAll('.race-card');
+
+    if (isMobileView()) {
+      dom.expandRaceList.style.scrollSnapType = 'x mandatory';
+      dom.expandRaceList.style.scrollPaddingLeft = '0px';
+      dom.expandRaceList.style.scrollPaddingRight = '0px';
+      dom.expandRaceList.style.webkitOverflowScrolling = 'touch';
+
+      cards.forEach(card => {
+        card.style.scrollSnapAlign = 'start';
+        card.style.scrollSnapStop = 'always';
+      });
+      return;
+    }
+
+    dom.expandRaceList.style.scrollSnapType = '';
+    dom.expandRaceList.style.scrollPaddingLeft = '';
+    dom.expandRaceList.style.scrollPaddingRight = '';
+    dom.expandRaceList.style.webkitOverflowScrolling = '';
+
+    cards.forEach(card => {
+      card.style.scrollSnapAlign = '';
+      card.style.scrollSnapStop = '';
+    });
+  }
+
+  const desktopController = {
+    prepareInitialView() {
+      closeSidePanel();
+      applyResponsiveMapInteraction();
+      applyResponsiveSidePanelState();
+      updateMobileDetailButton();
+    },
+
+    handleAfterMapLoad() {},
+
+    handlePinClick(pin) {
+      this.activateRace(pin, { openDetails: true, syncCarousel: true });
+    },
+
+    handleCarouselCardClick(race) {
+      const pin = getPinByRaceId(race.id);
+      if (pin) {
+        this.activateRace(pin, { openDetails: true, syncCarousel: false });
+      }
+    },
+
+    activateRace(pin, options = {}) {
+      const {
+        openDetails = true,
+        syncCarousel = true,
+      } = options;
+
+      setActivePin(pin);
+      populateSidePanel(pin);
+      zoomToRace(pin, 'desktop');
+
+      if (openDetails) {
+        openSidePanel();
+      }
+
+      if (!syncCarousel) return;
+
+      const isOpen = dom.bottomExpandMenu.classList.contains('open');
+      if (!isOpen) {
+        openScheduleInternal();
+        return;
+      }
+
+      state.carousel?.syncActive(pin.dataset.id);
+    },
+
+    handleScheduleToggle() {
+      if (dom.bottomExpandMenu.classList.contains('open')) {
+        closeScheduleInternal();
+        return;
+      }
+
+      openScheduleInternal();
+    },
+
+    handleResize() {
+      applyResponsiveCarouselSnap();
+      applyResponsiveMapInteraction();
+      applyResponsiveSidePanelState();
+      updateMobileDetailButton();
+
+      if (state.activePin) {
+        zoomToRace(state.activePin, 'desktop');
+      } else {
+        resetMapTransform();
+      }
+    },
+
+    afterScheduleReveal() {},
+  };
+
+  const mobileController = {
+    prepareInitialView() {
+      closeSidePanel();
+      applyResponsiveMapInteraction();
+      applyResponsiveSidePanelState();
+      beginScheduleRevealCycle();
+      resetScheduleVisualState();
+      dom.bottomExpandMenu.classList.remove('open');
+      state.carousel?.close();
+      updateMobileDetailButton();
+    },
+
+    handleAfterMapLoad() {
+      this.startScheduleAfterDelay();
+    },
+
+    handleResize() {
+      closeSidePanel();
+      applyResponsiveCarouselSnap();
+      applyResponsiveMapInteraction();
+      applyResponsiveSidePanelState();
+      updateMobileDetailButton();
+
+      if (state.carousel?.isOpen) {
+        state.carousel.handleResize();
+      }
+
+      if (state.activePin) {
+        zoomToRace(state.activePin, 'mobile');
+      } else {
+        resetMapTransform();
+      }
+    },
+
+    afterScheduleReveal() {
+      requestAnimationFrame(() => {
+        this.previewCenterCard();
+        this.scheduleCommit();
+      });
+    },
+
+    activateRace(pin) {
+      closeSidePanel();
+      setActivePin(pin);
+      zoomToRace(pin, 'mobile');
+      state.carousel?.setActiveById(pin.dataset.id, false);
+    },
+
+    getCenterCard() {
+      const cards = Array.from(dom.expandRaceList.querySelectorAll('.race-card[data-item-id][data-clone="body"]'));
+      if (!cards.length) return null;
+
+      const rootRect = dom.expandRaceList.getBoundingClientRect();
+      const anchorX = rootRect.left + (rootRect.width / 2);
+
+      return cards.reduce((nearest, card) => {
+        if (!nearest) return card;
+
+        const cardRect = card.getBoundingClientRect();
+        const nearestRect = nearest.getBoundingClientRect();
+        const cardCenter = cardRect.left + (cardRect.width / 2);
+        const nearestCenter = nearestRect.left + (nearestRect.width / 2);
+        const cardDiff = Math.abs(cardCenter - anchorX);
+        const nearestDiff = Math.abs(nearestCenter - anchorX);
+        return cardDiff < nearestDiff ? card : nearest;
+      }, null);
+    },
+
+    previewCenterCard() {
+      if (!isMobileView()) return '';
+      if (!dom.bottomExpandMenu.classList.contains('open')) return '';
+
+      const centerCard = this.getCenterCard();
+      const centerId = centerCard?.dataset?.itemId || '';
+      if (!centerId) return '';
+
+      if (state.mobilePreviewId !== centerId) {
+        state.mobilePreviewId = centerId;
+        state.carousel?.setActiveById(centerId, false);
+      }
+
+      return centerId;
+    },
+
+    commitCenterCard() {
+      if (!isMobileView()) return;
+      if (!dom.bottomExpandMenu.classList.contains('open')) return;
+
+      const centerId = this.previewCenterCard();
+      if (!centerId) return;
+      if (state.activePin && state.activePin.dataset.id === centerId) return;
+
+      const pin = getPinByRaceId(centerId);
+      if (!pin) return;
+      this.activateRace(pin);
+    },
+
+    scheduleCommit() {
+      clearTimeout(state.mobileScrollSyncTimer);
+      state.mobileScrollSyncTimer = 0;
+
+      if (!isMobileView()) return;
+
+      state.mobileScrollSyncTimer = window.setTimeout(() => {
+        if (!isMobileView()) return;
+        if (!dom.bottomExpandMenu.classList.contains('open')) return;
+        this.commitCenterCard();
+      }, CONFIG.mobileScrollSyncDelayMs);
+    },
+
+    startScheduleAfterDelay() {
+      if (!isMobileView()) return;
+      if (!state.mapLoaded) return;
+      if (state.mobileScheduleStarted) return;
+      if (state.carousel?.isOpen) return;
+
+      state.mobileScheduleStarted = true;
+      beginScheduleRevealCycle();
+      state.mobileScheduleTimer = window.setTimeout(() => {
+        if (!isMobileView()) return;
+        openScheduleInternal();
+      }, CONFIG.mobileScheduleDelayMs);
+    },
+  };
+
+  function handleModeTransition() {
+    const nextModeKey = getModeKey();
+    if (nextModeKey === state.modeKey) {
+      if (nextModeKey === 'mobile') {
+        mobileController.handleResize();
+      } else {
+        desktopController.handleResize();
+      }
+      return;
+    }
+
+    state.modeKey = nextModeKey;
+    state.mobileScheduleStarted = false;
+    beginScheduleRevealCycle();
+    clearActiveRace();
+    resetMapTransform();
+    setupCarousel(nextModeKey);
+
+    if (nextModeKey === 'mobile') {
+      mobileController.prepareInitialView();
+      mobileController.handleResize();
+      if (state.mapLoaded) {
+        mobileController.startScheduleAfterDelay();
+      }
+      return;
+    }
+
+    closeScheduleInternal();
+    desktopController.prepareInitialView();
+    desktopController.handleResize();
+  }
+
   function bindEvents() {
-    dom.mapContainer.addEventListener('click', closePanelAndResetMap);
-    dom.panelClose.addEventListener('click', closePanelAndResetMap);
-    dom.sidePanel.addEventListener('click', event => event.stopPropagation());
-    dom.expandToggleBtn.addEventListener('click', event => {
-      event.stopPropagation();
-      toggleSchedule();
+    dom.mapContainer.addEventListener('click', () => {
+      if (isMobileView()) return;
+      closeDesktopPanelAndResetMap();
     });
 
-    dom.expandToggleBtn.addEventListener('transitionend', () => {
-      finalizeScheduleOpen();
+    dom.panelClose.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (isMobileView()) {
+        closeSidePanel();
+        return;
+      }
+
+      closeDesktopPanelAndResetMap();
     });
+
+    dom.sidePanel.addEventListener('click', event => event.stopPropagation());
+
+    dom.expandToggleBtn.addEventListener('click', event => {
+      if (isMobileView()) return;
+      event.stopPropagation();
+      desktopController.handleScheduleToggle();
+    });
+
+    dom.expandRaceList.addEventListener('scroll', () => {
+      if (!isMobileView()) return;
+      if (!dom.bottomExpandMenu.classList.contains('open')) return;
+      mobileController.previewCenterCard();
+      mobileController.scheduleCommit();
+    }, { passive: true });
 
     window.addEventListener('resize', () => {
       resizeFogCanvas();
-
-      if (!state.activePin) return;
-
-      if (window.innerWidth > CONFIG.desktopBreakpoint) {
-        focusMapOnPin(state.activePin);
-      } else {
-        dom.mapWrapper.style.transform = 'none';
-      }
+      handleModeTransition();
     });
   }
 

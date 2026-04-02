@@ -40,6 +40,7 @@
     display: flex; justify-content: center; align-items: center;
     position: relative;
     perspective: 1200px; /* 攝影機透視深度 */
+    overflow: hidden
   }
 
   .map-wrapper {
@@ -170,7 +171,7 @@
       left: 100%;
       width: 200px;
       height: 120%;
-      background-color: #3b3b3b;
+      background-color: #f09000;
     }
 
     & #logo-ani-poly span:nth-child(2){
@@ -178,7 +179,7 @@
       right: 5px;
       height: 10px;
       width: 10px;
-      background-color: #ffe508;
+      background-color: #fff;
     }
 
     & #logo-ani-poly span:nth-child(3){
@@ -186,7 +187,7 @@
       right: -5px;
       height: 10px;
       width: 10px;
-      background-color: #ffe508;
+      background-color: #fff;
     }
 
     & #logo-ani-poly span:nth-child(4){
@@ -194,7 +195,7 @@
       left: 100%;
       width: 200px;
       height: 120%;
-      background-color: #3b3b3b;
+      background-color: #f09000;
     }
   }
 
@@ -417,18 +418,23 @@
 
   .panel-close {
     position: absolute;
-    top: 0%;
-    right: 100%;
-    padding: 7px 8px;
-    color: #ffffff88;
+    display: flex;
+    top: 5px;
+    right: 5px;
+    width: 35px;
+    height: 35px;
+    color: #ffffff96;
     font-size: 1.25rem;
     cursor: pointer;
     z-index: 10;
     transition: 0.3s;
-    background-color: #5b5b5b;
-    border-radius: 2px 0 0 2px;
+    background-color: #5b5b5b4a;
+    border-radius: 100%;
+    border: 1px solid #929292;
+    justify-content: center;
+    align-items: center;
   }
-  .panel-close:hover { color: #ffffff; background-color: #00a5d7;}
+  .panel-close:hover { color: #ffffff; background-color: #ffffff4f;}
 
   .panel-img { 
     width: 100%;
@@ -582,7 +588,7 @@
     --visible-count: 4;
     --race-card-gap: 8px;
     position: fixed;
-    bottom: 25px;
+    bottom: 5px;
     left: 20px;
     right: 20px;
     display: flex;
@@ -897,10 +903,7 @@
     }
 
     .expand-toggle-btn {
-      flex: 0 0 96px;
-      width: 96px;
-      min-width: 96px;
-      max-width: 96px;
+      display: none;
     }
 
     .race-card {
