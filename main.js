@@ -1,4 +1,4 @@
-import { RaceCarousel } from './race-carousel-module.js';
+import { RaceCarousel } from 'race-carousel-module.js';
 
 (() => {
   'use strict';
