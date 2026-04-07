@@ -1,4 +1,4 @@
-import { RaceCarousel } from 'race-carousel-module.js';
+import { RaceCarousel } from './Race-carousel-module.js';
 
 (() => {
   'use strict';
@@ -12,7 +12,8 @@ import { RaceCarousel } from 'race-carousel-module.js';
     desktopFocusOffsetY: 15,
     desktopScale: 3,
     desktopRotateX: 50,
-    mobileMapScale: 2.8,
+    mobileMapScale: 3,
+    mobileRotateX: 50,
     mobileFocusOffsetY: 10,
     listVisibleCount: {
       desktop: 4,
@@ -305,7 +306,7 @@ import { RaceCarousel } from 'race-carousel-module.js';
       offsetX: 0,
       offsetY: CONFIG.mobileFocusOffsetY,
       scale: CONFIG.mobileMapScale,
-      rotateX: 0,
+      rotateX: CONFIG.mobileRotateX,
     };
   }
 
@@ -324,7 +325,7 @@ import { RaceCarousel } from 'race-carousel-module.js';
     `;
 
     if (modeKey === 'mobile') {
-      resetPinFacing();
+      syncPinFacing(modeKey);
     }
   }
 
@@ -337,7 +338,13 @@ import { RaceCarousel } from 'race-carousel-module.js';
       visibleCount: CONFIG.listVisibleCount,
       gap: CONFIG.listGap,
       breakpoint: CONFIG.desktopBreakpoint,
-      loop: !isMobileMode,
+
+      loop: true,
+      loopCloneCount: isMobileMode ? raceData.length : null,
+
+      mobileCenterMode: isMobileMode,
+      mobileCardWidthRatio: 0.58,
+
       snap: !isMobileMode,
       wheelEnabled: !isMobileMode,
       wheelDesktopOnly: !isMobileMode,
@@ -347,6 +354,7 @@ import { RaceCarousel } from 'race-carousel-module.js';
       clickSetsActive: !isMobileMode,
       clickScrollIntoView: !isMobileMode,
       fireCardClick: !isMobileMode,
+
       cardClassName: 'race-card simplified loop-card',
       cardRenderer: race => `
         <div class="race-card-bg" style="background-image: url('${race.trackMap || ''}')"></div>
@@ -406,6 +414,12 @@ import { RaceCarousel } from 'race-carousel-module.js';
 
   function resetMapTransform() {
     dom.mapWrapper.style.transform = 'translate(0,0) scale(1) rotateX(0deg)';
+    state.pins.forEach(pin => {
+      const core = pin.querySelector('.pin-core');
+      const label = pin.querySelector('.pin-label');
+      if (core) core.style.transform = 'rotateX(0deg)';
+      if (label) label.style.transform = 'translate(-50%, 0px) rotateX(0deg)';
+    });
   }
 
   function populateSidePanel(pin) {
@@ -437,12 +451,23 @@ import { RaceCarousel } from 'race-carousel-module.js';
     clearActiveRace();
   }
 
-  function resetPinFacing() {
+  function syncPinFacing(modeKey) {
+    const focus = getFocusConfig(modeKey);
+    const compensateRotateX = -focus.rotateX;
+
     state.pins.forEach(pin => {
       const core = pin.querySelector('.pin-core');
       const label = pin.querySelector('.pin-label');
-      if (core) core.style.transform = 'rotateX(0deg)';
-      if (label) label.style.transform = 'translate(-50%,0) rotateX(0deg)';
+
+      // 核心點維持正面
+      if (core) {
+        core.style.transform = `rotateX(${compensateRotateX}deg)`;
+      }
+
+      // 名稱標籤反向補正，抵消 map-wrapper 的傾斜
+      if (label) {
+        label.style.transform = `translate(-50%, 0px) rotateX(${compensateRotateX}deg)`;
+      }
     });
   }
 
@@ -660,14 +685,14 @@ import { RaceCarousel } from 'race-carousel-module.js';
     const cards = dom.expandRaceList.querySelectorAll('.race-card');
 
     if (isMobileView()) {
-      dom.expandRaceList.style.scrollSnapType = 'x mandatory';
+      dom.expandRaceList.style.scrollSnapType = 'none';
       dom.expandRaceList.style.scrollPaddingLeft = '0px';
       dom.expandRaceList.style.scrollPaddingRight = '0px';
       dom.expandRaceList.style.webkitOverflowScrolling = 'touch';
 
       cards.forEach(card => {
-        card.style.scrollSnapAlign = 'start';
-        card.style.scrollSnapStop = 'always';
+        card.style.scrollSnapAlign = '';
+        card.style.scrollSnapStop = '';
       });
       return;
     }
@@ -798,28 +823,61 @@ import { RaceCarousel } from 'race-carousel-module.js';
     activateRace(pin) {
       closeSidePanel();
       setActivePin(pin);
-      zoomToRace(pin, 'mobile');
+
+      const top = parseFloat(pin.style.top);
+      const left = parseFloat(pin.style.left);
+      const moveX = 50 - left;
+      const moveY = 50 - top + CONFIG.mobileFocusOffsetY;
+
+      dom.mapWrapper.style.transformOrigin = `${left}% ${top}%`;
+
+      // 第一段：先回到比較平的姿態，做出「準備衝進去」的前置感
+      dom.mapWrapper.style.transition = 'transform 0.22s cubic-bezier(0.33, 1, 0.68, 1)';
+      dom.mapWrapper.style.transform = `
+        translate(calc(${moveX}% - 0px), ${moveY}%)
+        scale(1.35)
+        rotateX(0deg)
+      `;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // 第二段：再進入真正的 focus 狀態
+          dom.mapWrapper.style.transition = 'transform 0.82s cubic-bezier(0.25, 1, 0.5, 1)';
+          zoomToRace(pin, 'mobile');
+        });
+      });
+
       state.carousel?.setActiveById(pin.dataset.id, false);
     },
 
     getCenterCard() {
-      const cards = Array.from(dom.expandRaceList.querySelectorAll('.race-card[data-item-id][data-clone="body"]'));
+      const cards = Array.from(
+        dom.expandRaceList.querySelectorAll('.race-card[data-item-id]')
+      );
       if (!cards.length) return null;
 
       const rootRect = dom.expandRaceList.getBoundingClientRect();
       const anchorX = rootRect.left + (rootRect.width / 2);
 
-      return cards.reduce((nearest, card) => {
-        if (!nearest) return card;
+      let bestCard = null;
+      let bestDiff = Infinity;
 
-        const cardRect = card.getBoundingClientRect();
-        const nearestRect = nearest.getBoundingClientRect();
-        const cardCenter = cardRect.left + (cardRect.width / 2);
-        const nearestCenter = nearestRect.left + (nearestRect.width / 2);
-        const cardDiff = Math.abs(cardCenter - anchorX);
-        const nearestDiff = Math.abs(nearestCenter - anchorX);
-        return cardDiff < nearestDiff ? card : nearest;
-      }, null);
+      cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+
+        // 只考慮有進入 viewport 的卡
+        if (rect.right <= rootRect.left || rect.left >= rootRect.right) return;
+
+        const centerX = rect.left + (rect.width / 2);
+        const diff = Math.abs(centerX - anchorX);
+
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestCard = card;
+        }
+      });
+
+      return bestCard;
     },
 
     previewCenterCard() {

@@ -1,5 +1,8 @@
 export class RaceCarousel {
   constructor(options = {}) {
+    // ========================================
+    // 預設設定
+    // ========================================
     const defaults = {
       root: null,
       track: '.race-list-track',
@@ -7,17 +10,41 @@ export class RaceCarousel {
       visibleCount: { desktop: 4, mobile: 3 },
       gap: { desktop: 8, mobile: 5 },
       alignInset: 0,
+
+      // 是否啟用無限循環
       loop: true,
+
+      // 自訂 clone 數量
+      // null = 依照內建規則決定
+      loopCloneCount: null,
+
+      // 是否啟用 snap 對齊
       snap: true,
+
+      // 桌機滑輪滾動
       wheelEnabled: true,
       wheelDesktopOnly: true,
+
+      // 桌機 pointer drag
       dragThreshold: 6,
       usePointerDrag: true,
+
+      // 尺寸監測
       observeResize: true,
       useWindowResize: true,
+
+      // 點擊行為
       clickSetsActive: true,
       clickScrollIntoView: true,
       fireCardClick: true,
+
+      // 手機中央主卡模式
+      // 開啟後，手機版不再平均分配寬度，而是採用「中央主卡 + 左右露半張」的布局
+      mobileCenterMode: false,
+
+      // 手機中央主卡寬度比例（相對於 root 寬度）
+      mobileCardWidthRatio: 0.58,
+
       cardClassName: 'race-card simplified loop-card',
       cardRenderer: item => `
         <div class="race-card-bg" style="background-image: url('${item.trackMap || ''}')"></div>
@@ -37,6 +64,9 @@ export class RaceCarousel {
       gap: { ...defaults.gap, ...(options.gap || {}) },
     };
 
+    // ========================================
+    // 主要 DOM
+    // ========================================
     this.root = this.resolveElement(this.config.root);
     if (!this.root) {
       throw new Error('RaceCarousel 初始化失敗：找不到 root');
@@ -47,6 +77,9 @@ export class RaceCarousel {
       throw new Error('RaceCarousel 初始化失敗：找不到 track');
     }
 
+    // ========================================
+    // 內部狀態
+    // ========================================
     this.items = [];
     this.rendered = [];
     this.activeId = null;
@@ -70,6 +103,10 @@ export class RaceCarousel {
     this.inertiaActive = false;
     this.inertiaMode = '';
 
+    // 手機原生 touch loop 正規化 timer
+    this.nativeLoopNormalizeTimer = 0;
+
+    // 桌機拖曳狀態
     this.drag = {
       active: false,
       moved: false,
@@ -80,20 +117,34 @@ export class RaceCarousel {
       velocity: 0,
     };
 
+    // 滑輪慣性狀態
     this.wheel = {
       velocity: 0,
       lastTime: 0,
     };
 
+    // 手機 touch 狀態
+    this.touch = {
+      active: false,
+    };
+
+    // ========================================
+    // 綁定事件
+    // ========================================
     this.boundResize = this.handleResize.bind(this);
     this.boundScroll = this.handleScroll.bind(this);
     this.boundWheel = this.handleWheel.bind(this);
     this.boundPointerDown = this.handlePointerDown.bind(this);
     this.boundPointerMove = this.handlePointerMove.bind(this);
     this.boundPointerUp = this.handlePointerUp.bind(this);
+    this.boundTouchStart = this.handleTouchStart.bind(this);
+    this.boundTouchEnd = this.handleTouchEnd.bind(this);
 
     this.root.addEventListener('scroll', this.boundScroll, { passive: true });
     this.root.addEventListener('wheel', this.boundWheel, { passive: false });
+    this.root.addEventListener('touchstart', this.boundTouchStart, { passive: true });
+    this.root.addEventListener('touchend', this.boundTouchEnd, { passive: true });
+    this.root.addEventListener('touchcancel', this.boundTouchEnd, { passive: true });
 
     if (this.config.usePointerDrag) {
       this.root.addEventListener('pointerdown', this.boundPointerDown);
@@ -106,14 +157,22 @@ export class RaceCarousel {
     }
   }
 
+  // 解析 root / selector
   resolveElement(target) {
     if (!target) return null;
     if (target instanceof Element) return target;
     return document.querySelector(target);
   }
 
+  // 是否為手機版
   isMobile() {
     return window.innerWidth <= this.config.breakpoint;
+  }
+
+  // 是否為「手機 + loop + 原生 touch scroll」模式
+  // 這個模式下不能像桌機一樣每次 scroll 都立刻 normalize，否則會卡住
+  isNativeMobileLoopMode() {
+    return this.isMobile() && this.config.loop && !this.config.usePointerDrag;
   }
 
   getVisibleCount() {
@@ -128,10 +187,17 @@ export class RaceCarousel {
       : this.config.gap.desktop;
   }
 
+  // 取得對齊內縮量
+  // 手機中央主卡模式下，會自動把 active 卡置中
   getAlignInset() {
+    if (this.isMobile() && this.config.mobileCenterMode && this.slideWidth > 0) {
+      return Math.max(0, (this.getLayoutWidth() - this.slideWidth) / 2);
+    }
+
     return Math.max(0, Number(this.config.alignInset) || 0);
   }
 
+  // 純原生 scroller 模式：不 loop、不 snap、不 drag
   usesNativeScrollerMode() {
     return !this.config.loop && !this.config.snap && !this.config.usePointerDrag;
   }
@@ -140,6 +206,7 @@ export class RaceCarousel {
     return Array.from(this.track.querySelectorAll('[data-carousel-slide="1"]'));
   }
 
+  // 只取真正 body 區塊的 slide，不含 head / tail clone
   getBodySlides() {
     const slides = this.getSlides();
     if (!this.config.loop || !this.items.length || !this.cloneCount) return slides;
@@ -161,11 +228,25 @@ export class RaceCarousel {
     return [normalizedWidth, this.getVisibleCount(), this.getGap(), this.items.length].join(':');
   }
 
+  // 取得 loop clone 數量
+  // 手機 coverflow / native loop 模式下，clone 數量拉滿比較穩，不容易出現撞邊界後跳卡
   getLoopCloneCount() {
     if (!this.config.loop || this.items.length <= 1) return 0;
+
+    const configured = Number(this.config.loopCloneCount);
+    if (Number.isFinite(configured) && configured > 0) {
+      return Math.min(Math.floor(configured), this.items.length);
+    }
+
+    if (this.isNativeMobileLoopMode()) {
+      return this.items.length;
+    }
+
     return Math.min(this.getVisibleCount() + 1, this.items.length);
   }
 
+  // 取得 slide 左側位置
+  // 有 renderIndex 時直接用 step 推算，避免反覆量測 DOM
   getSlideLeft(slide) {
     if (!slide) return 0;
 
@@ -179,6 +260,7 @@ export class RaceCarousel {
     return (slideRect.left - rootRect.left) + this.root.scrollLeft;
   }
 
+  // body 區起始偏移
   getBodyStartOffset() {
     if (!this.config.loop) {
       return 0;
@@ -196,6 +278,7 @@ export class RaceCarousel {
     return this.getBodyStartOffset();
   }
 
+  // 真正 body 區總寬
   getSegmentWidth() {
     if (!this.config.loop || !this.items.length || !this.step) return 0;
     return this.items.length * this.step;
@@ -210,6 +293,9 @@ export class RaceCarousel {
     return this.getBodyStartOffset() + (safeIndex * this.step);
   }
 
+  // ========================================
+  // 建立 carousel
+  // ========================================
   build(items = []) {
     this.items = Array.isArray(items) ? [...items] : [];
     this.track.innerHTML = '';
@@ -283,6 +369,9 @@ export class RaceCarousel {
     this.resetPosition(false);
   }
 
+  // ========================================
+  // 套用寬度 / gap / 位置計算
+  // ========================================
   applyLayout(force = false) {
     const visibleCount = this.getVisibleCount();
     const gap = this.getGap();
@@ -299,33 +388,36 @@ export class RaceCarousel {
     }
 
     const layoutWidth = Math.max(0, rootWidth);
-    const totalGapWidth = gap * (visibleCount - 1);
-    const availableWidth = Math.max(0, layoutWidth - totalGapWidth);
+    let nextSlideWidth = 0;
 
-    this.slideWidth = Math.max(1, Math.floor(availableWidth / visibleCount));
+    // 手機中央主卡模式
+    // 這裡不再用 visibleCount 平均分配，而是直接用比例寬度，
+    // 讓中央卡可以較大，左右只露出部分區域
+    if (this.isMobile() && this.config.mobileCenterMode) {
+      const ratio = Math.min(0.8, Math.max(0.42, Number(this.config.mobileCardWidthRatio) || 0.58));
+      nextSlideWidth = Math.max(1, Math.floor(layoutWidth * ratio));
+    } else {
+      const totalGapWidth = gap * (visibleCount - 1);
+      const availableWidth = Math.max(0, layoutWidth - totalGapWidth);
+      nextSlideWidth = Math.max(1, Math.floor(availableWidth / visibleCount));
+    }
+
+    this.slideWidth = nextSlideWidth;
     this.step = this.slideWidth + gap;
     this.lastAppliedLayoutSignature = layoutSignature;
     this.lastAppliedRootWidth = rootWidth;
 
     this.track.style.display = 'flex';
-    this.track.style.gap = `${gap}px`;
     this.track.style.width = 'max-content';
-    this.track.style.minWidth = 'max-content';
-    this.track.style.boxSizing = 'border-box';
-    this.track.style.paddingLeft = '0px';
-    this.track.style.paddingRight = '0px';
 
     this.getSlides().forEach(slide => {
-      slide.style.flex = `0 0 ${this.slideWidth}px`;
       slide.style.width = `${this.slideWidth}px`;
-      slide.style.minWidth = `${this.slideWidth}px`;
-      slide.style.maxWidth = `${this.slideWidth}px`;
-      slide.style.boxSizing = 'border-box';
     });
 
     return true;
   }
 
+  // 設定 scrollLeft，並在 loop 模式下進行位置正規化
   setScrollPosition(nextLeft, syncDragAnchor = false) {
     if (!Number.isFinite(nextLeft)) return 0;
 
@@ -334,6 +426,8 @@ export class RaceCarousel {
     return this.normalizeLoopPosition(syncDragAnchor);
   }
 
+  // 當滑進 head / tail clone 區時，立即把位置換回 body 區對應位置
+  // 視覺上看起來就像無限循環
   normalizeLoopPosition(syncDragAnchor = false) {
     if (!this.config.loop || !this.items.length || !this.cloneCount || !this.step) return 0;
 
@@ -371,6 +465,7 @@ export class RaceCarousel {
     return offset;
   }
 
+  // 重設起始位置
   resetPosition(keepActive = true) {
     if (!this.items.length || !this.step) return;
 
@@ -404,6 +499,25 @@ export class RaceCarousel {
     this.inertiaRafId = 0;
   }
 
+  clearNativeLoopNormalizeTimer() {
+    if (!this.nativeLoopNormalizeTimer) return;
+    clearTimeout(this.nativeLoopNormalizeTimer);
+    this.nativeLoopNormalizeTimer = 0;
+  }
+
+  // 手機原生滑動時，不要每幀強制 normalize
+  // 改成延後一點再修正，避免觸控滑動過程卡住
+  scheduleNativeLoopNormalize(delay = 50) {
+    if (!this.isNativeMobileLoopMode()) return;
+
+    this.clearNativeLoopNormalizeTimer();
+    this.nativeLoopNormalizeTimer = window.setTimeout(() => {
+      this.nativeLoopNormalizeTimer = 0;
+      this.normalizeLoopPosition();
+    }, delay);
+  }
+
+  // 桌機拖曳慣性
   startInertiaScroll() {
     if (!this.config.usePointerDrag) return;
 
@@ -433,7 +547,7 @@ export class RaceCarousel {
 
       this.setScrollPosition(this.root.scrollLeft + this.drag.velocity * dt);
 
-      const friction = Math.pow(0.92, dt / 16.667);
+      const friction = Math.pow(0.76, dt / 16.667); //慣性速度
       this.drag.velocity *= friction;
 
       if (Math.abs(this.drag.velocity) < minVelocity) {
@@ -450,6 +564,7 @@ export class RaceCarousel {
     this.inertiaRafId = requestAnimationFrame(tick);
   }
 
+  // 桌機滑輪慣性
   startWheelInertiaScroll() {
     const minVelocity = 0.02;
 
@@ -481,7 +596,7 @@ export class RaceCarousel {
 
       this.setScrollPosition(this.root.scrollLeft + this.wheel.velocity * dt);
 
-      const friction = Math.pow(0.94, dt / 16.667);
+      const friction = Math.pow(0.92, dt / 16.667);
       this.wheel.velocity *= friction;
 
       if (Math.abs(this.wheel.velocity) < minVelocity) {
@@ -570,6 +685,7 @@ export class RaceCarousel {
     this.resizeRafId = 0;
   }
 
+  // 打開 carousel 後等待 layout 穩定，再做寬度與定位
   open() {
     this.isOpen = true;
     this.startObserveRoot();
@@ -638,8 +754,10 @@ export class RaceCarousel {
 
   close() {
     this.isOpen = false;
+    this.touch.active = false;
     this.openSequence += 1;
     this.clearSnapTimer();
+    this.clearNativeLoopNormalizeTimer();
     this.stopProgrammaticScroll();
     this.stopInertiaScroll();
     cancelAnimationFrame(this.openRafId);
@@ -677,6 +795,8 @@ export class RaceCarousel {
     return this.getBodySlide(nearestIndex);
   }
 
+  // 捲動到指定 left
+  // 手機中央主卡模式下，會透過 alignInset 讓卡片置中
   scrollToLeft(targetLeft, smooth = false) {
     if (!Number.isFinite(targetLeft)) return;
 
@@ -766,12 +886,35 @@ export class RaceCarousel {
     this.setActiveById(id, false);
   }
 
+  // scroll 事件主處理
   handleScroll() {
     if (!this.isOpen) return;
+
     this.lastKnownScrollLeft = this.root.scrollLeft;
+
     if (this.drag.active) return;
     if (this.programmaticScrollActive) return;
     if (this.inertiaActive) return;
+
+    // 手機原生 loop 模式：
+    // - 觸控滑動進行中，不要每次都立刻 normalize
+    // - 靠近硬邊界時才立即修正
+    // - 手指放開後再立刻修正一次
+    if (this.isNativeMobileLoopMode()) {
+      const maxScrollLeft = Math.max(0, this.root.scrollWidth - this.root.clientWidth);
+      const edgeThreshold = Math.max(this.step, 1);
+      const nearHardStart = this.root.scrollLeft <= edgeThreshold;
+      const nearHardEnd = this.root.scrollLeft >= (maxScrollLeft - edgeThreshold);
+
+      if (nearHardStart || nearHardEnd || !this.touch.active) {
+        this.clearNativeLoopNormalizeTimer();
+        this.normalizeLoopPosition();
+      } else {
+        this.scheduleNativeLoopNormalize(40);
+      }
+      return;
+    }
+
     this.normalizeLoopPosition();
   }
 
@@ -791,13 +934,13 @@ export class RaceCarousel {
 
     const now = event.timeStamp || performance.now();
     const dt = this.wheel.lastTime ? Math.max(1, now - this.wheel.lastTime) : 16;
-    const immediateDelta = event.deltaY * 0.35;
+    const immediateDelta = event.deltaY * 0.22;
     const wheelVelocity = event.deltaY / dt;
 
     this.setScrollPosition(this.root.scrollLeft + immediateDelta);
 
     if (this.inertiaActive && this.inertiaMode === 'wheel') {
-      this.wheel.velocity = this.wheel.velocity * 0.75 + wheelVelocity * 0.45;
+      this.wheel.velocity = this.wheel.velocity * 0.82 + wheelVelocity * 0.22;
     } else {
       this.wheel.velocity = wheelVelocity;
     }
@@ -835,7 +978,7 @@ export class RaceCarousel {
     const dt = Math.max(1, (event.timeStamp || performance.now()) - this.drag.lastTime);
     const pointerDelta = event.clientX - this.drag.lastX;
     const scrollVelocity = (-pointerDelta) / dt;
-    this.drag.velocity = this.drag.velocity * 0.75 + scrollVelocity * 0.25;
+    this.drag.velocity = this.drag.velocity * 0.82 + scrollVelocity * 0.18; //累積速度
     this.drag.lastX = event.clientX;
     this.drag.lastTime = event.timeStamp || performance.now();
 
@@ -862,6 +1005,18 @@ export class RaceCarousel {
     });
   }
 
+  handleTouchStart() {
+    if (!this.isNativeMobileLoopMode()) return;
+    this.touch.active = true;
+    this.clearNativeLoopNormalizeTimer();
+  }
+
+  handleTouchEnd() {
+    if (!this.isNativeMobileLoopMode()) return;
+    this.touch.active = false;
+    this.scheduleNativeLoopNormalize(0);
+  }
+
   handleResize() {
     if (!this.isOpen) return;
 
@@ -885,13 +1040,18 @@ export class RaceCarousel {
 
   destroy() {
     this.clearSnapTimer();
+    this.clearNativeLoopNormalizeTimer();
     this.stopProgrammaticScroll();
     this.stopInertiaScroll();
     cancelAnimationFrame(this.openRafId);
     this.openRafId = 0;
     this.stopObserveRoot();
+
     this.root.removeEventListener('scroll', this.boundScroll);
     this.root.removeEventListener('wheel', this.boundWheel);
+    this.root.removeEventListener('touchstart', this.boundTouchStart);
+    this.root.removeEventListener('touchend', this.boundTouchEnd);
+    this.root.removeEventListener('touchcancel', this.boundTouchEnd);
 
     if (this.config.usePointerDrag) {
       this.root.removeEventListener('pointerdown', this.boundPointerDown);
