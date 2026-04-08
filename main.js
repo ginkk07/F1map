@@ -21,12 +21,12 @@ import { RaceCarousel } from './Race-carousel-module.js';
     },
     listGap: {
       desktop: 8,
-      mobile: 5,
+      mobile: 0,
     },
     scheduleLayoutMaxChecks: 24,
     scheduleLayoutStableFrames: 2,
-    mobileScheduleDelayMs: 2000,
-    mobileScrollSyncDelayMs: 180,
+    mobileScheduleDelayMs: 1000, //初次讀取延遲
+    mobileScrollSyncDelayMs: 300, //手機板滑動延遲
   };
 
   const state = {
@@ -402,7 +402,16 @@ import { RaceCarousel } from './Race-carousel-module.js';
     state.mobilePreviewId = '';
     state.pins.forEach(pin => pin.classList.remove('active', 'dimmed'));
     state.carousel?.clearActive(false);
+    updatePreviewCard('');
     updateMobileDetailButton();
+  }
+
+  function updatePreviewCard(centerId = '') {
+    const cards = dom.expandRaceList.querySelectorAll('.race-card[data-item-id]');
+
+    cards.forEach(card => {
+      card.classList.toggle('preview', !!centerId && card.dataset.itemId === String(centerId));
+    });
   }
 
   function updatePinStates(activePin) {
@@ -890,22 +899,25 @@ import { RaceCarousel } from './Race-carousel-module.js';
 
       if (state.mobilePreviewId !== centerId) {
         state.mobilePreviewId = centerId;
-        state.carousel?.setActiveById(centerId, false);
+        updatePreviewCard(centerId);
       }
 
       return centerId;
     },
 
-    commitCenterCard() {
+    commitCenterCard(expectedId = '') {
       if (!isMobileView()) return;
       if (!dom.bottomExpandMenu.classList.contains('open')) return;
 
-      const centerId = this.previewCenterCard();
+      const centerId = this.getCenterCard()?.dataset?.itemId || '';
       if (!centerId) return;
+      if (expectedId && centerId !== expectedId) return;
       if (state.activePin && state.activePin.dataset.id === centerId) return;
 
       const pin = getPinByRaceId(centerId);
       if (!pin) return;
+
+      updatePreviewCard('');
       this.activateRace(pin);
     },
 
@@ -915,10 +927,13 @@ import { RaceCarousel } from './Race-carousel-module.js';
 
       if (!isMobileView()) return;
 
+      const candidateId = this.previewCenterCard();
+      if (!candidateId) return;
+
       state.mobileScrollSyncTimer = window.setTimeout(() => {
         if (!isMobileView()) return;
         if (!dom.bottomExpandMenu.classList.contains('open')) return;
-        this.commitCenterCard();
+        this.commitCenterCard(candidateId);
       }, CONFIG.mobileScrollSyncDelayMs);
     },
 

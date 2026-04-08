@@ -892,7 +892,7 @@
     left: 0;
     right: 0;
     bottom: 15px;
-    padding: 0 10px;
+    padding: 0px;
     box-sizing: border-box;
     align-items: center;
     gap: 0;
@@ -924,6 +924,7 @@
     min-width: max-content;
     padding: 8px 0;
     box-sizing: border-box;
+    gap: 0;
   }
 
   .race-list-track > .race-card,
@@ -1003,20 +1004,23 @@
   }
 
   /* 中央 active 卡 */
-  .expand-race-list .race-card.active {
-    transform: scale(1);
+  .expand-race-list .race-card.active,
+  .expand-race-list .race-card.preview {
+    transform: scale(.98);
     opacity: 1;
     filter: none;
     z-index: 3;
   }
 
-  .expand-race-list .race-card.active .race-card-bg {
+  .expand-race-list .race-card.active .race-card-bg,
+  .expand-race-list .race-card.preview .race-card-bg {
     opacity: 0.9;
     transform: scale(1.04);
     filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.45));
   }
 
-  .expand-race-list .race-card.active .race-card-info {
+  .expand-race-list .race-card.active .race-card-info,
+  .expand-race-list .race-card.preview .race-card-info {
     background: linear-gradient(to top, rgba(0, 210, 255, 0.22), rgba(0, 0, 0, 0.15));
   }
 
