@@ -1,0 +1,969 @@
+/* =========================================================
+   Singapore F1 Seat Map Layout
+   左側線框改為 border.svg 底圖版
+   對應 HTML：seat-map-layout-border-svg-html
+   ========================================================= */
+
+:root {
+  --sidebar-w: 455px;
+  --page-bg: #f4f6f8;
+  --dark: #070c0f;
+  --line-light: #cfd4db;
+  --accent: #e8ff1c;
+  --text: #111111;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*:focus{
+  outline: none;
+}
+
+html,
+body {
+  margin: 0;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+  color: var(--text);
+  background-color: var(--page-bg);
+  background: url(../assets/images/background-bg1.png);
+  background-size: 95px;
+}
+
+button {
+  font: inherit;
+}
+
+/* =========================
+   Page shell
+   ========================= */
+
+.seat-page {
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  background: linear-gradient(0deg, rgb(245 245 245 / 0%), rgb(245 245 245 / 100%));
+}
+
+/* =========================
+   Left sidebar
+   border.svg 已包含： 左側品牌直欄/外框線/黃色短線
+========================= */
+
+.seat-sidebar {
+  position: relative;
+  width: var(--sidebar-w);
+  height: 100%;
+  background: var(--dark);
+  color: #ffffff;
+}
+
+.seat-sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(100% - 1px);
+  height: 100%;
+  aspect-ratio: 56 / 1080;
+  pointer-events: none;
+
+  background-image: url("../assets/svg/stage-sidebar-decorative.svg");
+  background-repeat: no-repeat;
+}
+
+.sidebar-border-left {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  display: block;
+  top: 0;
+  left: 0;
+  height: 95%;
+  object-position: left top;
+}
+
+.sidebar-border-top {
+  position: absolute;
+  top: 0;
+  left: calc(var(--sidebar-border-left-real-w) - 0.5px);
+  object-fit: contain;
+  object-position: left top;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sidebar-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+
+  /* 關鍵：避開 border.svg 左側 FORMULA ONE 與外框線 */
+  padding: 74px 10px 34px 92px;
+}
+
+/* =========================
+   Heading
+   ========================= */
+
+.seat-heading {
+  position: relative;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  margin-bottom: 1rem;
+  margin-right: 16px;
+}
+
+.seat-heading > div{
+  display: flex;
+  align-items: flex-end;
+}
+
+.seat-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 46px;
+  height: 3px;
+  background: var(--accent);
+}
+
+.seat-heading h1 {
+  margin: 0;
+  font-size: 35px;
+  margin-right: 12px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.seat-category-toggle {
+  position: relative;
+  width: 120px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  perspective: 800px;
+  overflow: hidden;
+}
+
+.category-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.45s ease;
+}
+
+.category-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  justify-items: start;
+  backface-visibility: hidden;
+  font-size: 15px;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: none;
+  letter-spacing: .04rem;
+}
+
+.category-face--back {
+  transform: rotateX(180deg);
+}
+
+.seat-category-toggle.is-hospitality .category-flip {
+  transform: rotateX(180deg);
+}
+/* =========================
+   Zone nav
+   ========================= */
+
+.zone-nav {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+
+.zone-nav::-webkit-scrollbar {
+  height: 0;
+}
+
+.zone-chip {
+  flex: 0 0 auto;
+  height: 27px;
+  border: 1px solid rgb(110, 110, 110);
+  border-radius: 1px;
+  background: transparent;
+  color: #ffffff;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: default;
+}
+
+.zone-chip.is-active {
+  color: #030303;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* =========================
+   Seat list
+   ========================= */
+
+.seat-list-wrap {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.seat-list {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 18px;
+  padding-right: 11px;
+  padding-left: 0;
+}
+
+/* 底部黑色漸層提示 */
+.seat-list-wrap::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 5px;
+  bottom: -15px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    to bottom,
+    rgba(7, 12, 15, 0) 0%,
+    rgba(7, 12, 15, 0.72) 46%,
+    rgba(7, 12, 15, 1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* 還有內容可以往下捲時才顯示 */
+.seat-list-wrap.has-more::after {
+  opacity: 1;
+}
+
+.seat-list::-webkit-scrollbar {
+  width: 3px;
+  height: 4px;
+}
+
+.seat-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.seat-card {
+  --zone-color: #d923ff;
+  position: relative;
+  min-height: 85px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  background: linear-gradient(90deg, rgb(0 0 0), rgb(0 0 0));
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: transform 0.33s;
+  cursor: pointer;
+}
+
+.seat-card:hover{
+  background: linear-gradient(320deg, rgb(26 28 37) 0%, rgb(0 0 0) 100%);
+  transform: translateX(5px);
+}
+
+.seat-card.is-active {
+  border-color: var(--accent);
+  background: linear-gradient(320deg, rgb(53, 54, 8) 0%, rgb(0 0 0) 40%);
+}
+
+@keyframes seatCardEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.seat-card.is-entering {
+  animation: seatCardEnter 0.3s ease both;
+  animation-delay: calc(var(--card-index, 0) * 30ms);
+}
+
+.seat-card.is-hidden {
+  display: none;
+}
+
+.seat-card.is-dim {
+  opacity: 0.3;
+}
+
+.seat-card-photo{
+  height: 100%;
+  width: 100%;
+}
+
+.seat-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.seat-card__content {
+  display: grid;
+  padding: 0px 5px;
+  min-height: 58px;
+  align-content: space-between;
+}
+
+.seat-card h2 {
+  margin: 5px 0;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* 左側座位列表沒有內容時的提示 */
+.seat-list-empty {
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  padding: 18px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.seat-list-empty[hidden] {
+  display: none;
+}
+
+.zone-badge {
+  justify-self: end;
+  min-width: 76px;
+  text-align: center;
+  color: var(--zone-color);
+  border: 1px solid var(--zone-color);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+  margin: 5px 0;
+}
+
+/* =========================
+   Right content
+   ========================= */
+
+.seat-content {
+  min-width: 0;
+  height: 100%;
+  padding: 22px 26px 22px 46px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 242px;
+  overflow: hidden;
+}
+
+.map-area {
+  min-height: 0;
+}
+
+.map-frame {
+  --cut: 44px;
+  --line-color: #d3d3d3;
+
+  position: relative;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 上方線 + SEAT MAP */
+.map-head {
+  position: absolute;
+  top: 0;
+  left: var(--cut);
+  right: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  z-index: 4;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* 45度左上斜線 */
+.map-corner-line--tl {
+  position: absolute;
+  left: 0;
+  top: var(--cut);
+  width: calc(var(--cut) * 1.4142);
+  height: 1px;
+  background: var(--line-color);
+  transform: rotate(-45deg);
+  transform-origin: left center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* 上邊線：從斜角結束後開始往右延伸 */
+.map-edge--top {
+  position: static;
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line-color);
+}
+
+/* 左邊線：從斜角結束後往下延伸 */
+.map-edge--left {
+  position: absolute;
+  left: 0;
+  top: var(--cut);
+  bottom: 0;
+  width: 1px;
+  height: 30%;
+  background: var(--line-color);
+  z-index: 3;
+  pointer-events: none;
+}
+
+
+/* 右上文字：貼在線段尾端 */
+.map-label {
+  position: static;
+  flex: 0 0 auto;
+  color: #cfcfcf;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.5rem;
+  white-space: nowrap;
+}
+
+.map-svg-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.map-svg[data-svg-src] {
+  width: min(100%, 1070px);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.map-svg[data-svg-src] .map-svg__inline,
+.map-svg[data-svg-src] svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.map-seat-target {
+  cursor: pointer;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+  outline: none;
+}
+
+.map-seat-target.is-active,
+.map-seat-target.is-active * {
+  fill: var(--seat-color);
+  opacity: 1;
+}
+
+.map-seat-target.is-clickable:not(.is-active):not(.is-dim),
+.map-seat-target.is-clickable:not(.is-active):not(.is-dim) * {
+  fill: var(--seat-filter-color) !important;
+  opacity: 1;
+}
+
+.map-zone-target.is-zone-active,
+.map-zone-target.is-zone-active * {
+  fill: var(--zone-color) !important;
+  opacity: 0.38;
+}
+
+.map-seat-target.is-zone-active:not(.is-active):not(.is-dim) {
+  opacity: 0.45;
+}
+
+.map-seat-target.is-disabled {
+  opacity: 0.28;
+  cursor: default;
+  pointer-events: none;
+  filter: none !important;
+}
+
+.map-seat-target.is-disabled * {
+  cursor: default;
+  pointer-events: none;
+}
+
+.map-help {
+  display: none;
+  position: absolute;
+  right: 0px;
+  bottom: 13px;
+  width: 38px;
+  height: 38px;
+  line-height: 1rem;
+  border: 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #aaa;
+  z-index: 2;
+  box-shadow: 0px 0px 6px 2px #c0c0c070;
+  cursor: pointer;
+}
+
+.info-bar {
+  --info-cut: 21px;
+  --info-border: #d3d4d7;
+  --info-bg: rgba(255, 255, 255, 0.85);
+
+  position: relative;
+  min-height: 210px;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 54px;
+  gap: 10px;
+  align-items: stretch;
+  padding: 13px;
+
+  border: 0;
+  overflow: hidden;
+
+  clip-path: polygon(
+    var(--info-cut) 0,
+    calc(100% - var(--info-cut)) 0,
+    100% var(--info-cut),
+    100% calc(100% - var(--info-cut)),
+    calc(100% - var(--info-cut)) 100%,
+    var(--info-cut) 100%,
+    0 calc(100% - var(--info-cut)),
+    0 var(--info-cut)
+  );
+}
+
+/* 外框線 */
+.info-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--info-border);
+
+  clip-path: polygon(
+    var(--info-cut) 0,
+    calc(100% - var(--info-cut)) 0,
+    100% var(--info-cut),
+    100% calc(100% - var(--info-cut)),
+    calc(100% - var(--info-cut)) 100%,
+    var(--info-cut) 100%,
+    0 calc(100% - var(--info-cut)),
+    0 var(--info-cut)
+  );
+}
+
+/* 內層背景：縮 1px，留下外框 */
+.info-bar::after {
+  content: "";
+  position: absolute;
+  inset: 1.25px;
+  z-index: 0;
+  pointer-events: none;
+  background:repeating-linear-gradient( 135deg,rgba(0, 0, 0, 0.026) 0 1px,transparent 2px 6px),var(--info-bg);
+  clip-path: polygon(
+    calc(var(--info-cut) - 1px) 0,
+    calc(100% - var(--info-cut) + 1px) 0,
+    100% calc(var(--info-cut) - 1px),
+    100% calc(100% - var(--info-cut) + 1px),
+    calc(100% - var(--info-cut) + 1px) 100%,
+    calc(var(--info-cut) - 1px) 100%,
+    0 calc(100% - var(--info-cut) + 1px),
+    0 calc(var(--info-cut) - 1px)
+  );
+}
+
+.info-deco {
+  position: absolute;
+  top: 10px;
+  right: 40px;
+  width: 64px;
+  z-index: 3;
+}
+
+.info-deco::before,
+.info-deco::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 6px;
+  background: var(--accent);
+  transform: skewX(48deg);
+}
+
+.info-deco::before {
+  right: 52px;
+  width: 18px;
+}
+
+.info-deco::after {
+  right: 0;
+  width: 48px;
+}
+
+/* 內容要蓋在背景上 */
+.info-image,
+.info-copy,
+.info-action{
+  position: relative;
+  z-index: 2;
+}
+
+.info-image {
+  --info-img-cut: 15px;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  aspect-ratio: 6 / 4;
+
+  clip-path: polygon(
+    var(--info-img-cut) 0,
+    calc(100% - var(--info-img-cut)) 0,
+    100% var(--info-img-cut),
+    100% calc(100% - var(--info-img-cut)),
+    calc(100% - var(--info-img-cut)) 100%,
+    var(--info-img-cut) 100%,
+    0 calc(100% - var(--info-img-cut)),
+    0 var(--info-img-cut)
+  );
+}
+
+.info-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-copy {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  align-self: start;
+  height: 100%;
+  overflow: auto;
+}
+
+.info-copy h2 {
+  margin: 0.3rem 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.info-copy p {
+  margin: 0;
+  max-width: 100%;
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.75;
+  font-weight: 500;
+}
+
+.info-action {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  align-self: center; 
+}
+
+.cta-button {
+  border: 0;
+  background: #1d1d1d;
+  color: #ffffff;
+  padding: 13px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: default;
+  white-space: nowrap;
+
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% calc(100% - 13px),
+    calc(100% - 13px) 100%,
+    0 100%
+  )
+}
+
+/* =========================
+   RWD
+   ========================= */
+
+@media (max-width: 1199px) {
+  :root {
+    --sidebar-w: 355px;
+  }
+
+  .sidebar-content {
+    padding: 65px 15px 25px 65px;
+  }
+
+  .seat-card {
+    grid-template-columns: 83px minmax(0, 1fr);
+  }
+
+  .seat-content {
+    grid-template-rows: 1fr auto;
+    padding: 18px 15px 18px 30px;
+  }
+
+  .info-bar {
+    grid-template-columns: 260px 1fr;
+  }
+
+  .sidebar-border-left{
+    height:75%;
+  }
+
+  .info-copy {
+    max-height: 265px;
+  }
+}
+
+@media (max-width: 1024px) {
+
+  .info-deco{
+    position: absolute;
+  }
+
+  .info-bar {
+    grid-template-columns: 3fr 2fr;
+    grid-template-rows: auto auto;
+    column-gap: 10px;
+  }
+
+  .info-image {
+    grid-column: 1;
+    grid-row: 1;
+    max-height: 185px;
+  }
+
+  .info-copy {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    max-height: 265px;
+    overflow: auto;
+  }
+
+  .info-action {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    justify-self: center;
+    width: 100%;
+  }
+
+  .cta-button{
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .seat-page{
+    height: 100svh;
+    grid-template-columns: 1fr;
+  }
+
+  .seat-sidebar {
+    display: block;
+    height: 50%;
+    width: 100%;
+    bottom: 0;
+    position: absolute;
+    z-index: 100;
+    transition: transform 0.28s ease, opacity 0.2s ease;
+    will-change: transform, opacity;
+  }
+
+   .seat-page.is-seat-list-closed .seat-sidebar {
+    transform: translateY(calc(100% + 40px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .seat-page.is-seat-list-open .seat-sidebar {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-border-top{
+    display: none;
+  }
+
+  .sidebar-border-left{
+    display: none;
+  }
+
+  .sidebar-content {
+    padding: 20px 15px 8px 15px;
+  }
+
+  .zone-nav{
+    padding-bottom: 10px;
+  }
+
+  .zone-chip{
+    padding: 0 8px;
+    flex: 1 0 0;
+  }
+
+  .seat-heading{
+    margin-right: 0;
+  }
+
+  .seat-sidebar::after{
+    background-image: url(../assets/svg/stage-sidebar-decorative-mob.svg);
+    aspect-ratio: 200 / 32;
+    width: 220px;
+    height: auto;
+    top: auto;
+    left: 0;
+    bottom: calc(100% - 0.5px);
+  }
+
+  .seat-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: 108px auto;
+    margin-bottom: 0px;
+  }
+
+  .seat-card:hover{
+    transform:none;
+  }
+
+  .seat-card__content{
+    height: 100%;
+  }
+
+  @keyframes seatCardEnter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .seat-content {
+    grid-template-rows: 1fr 1fr;
+    padding: 16px;
+    width: 100vw;
+  }
+  
+  .seat-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 198px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 100%;
+    padding-bottom: 10px;
+    padding-right: 0;
+    margin: 0;
+    column-gap: 10px;
+  }
+
+  .seat-list-wrap::after{
+    display: none;
+  }
+
+  .seat-heading h1 {
+    font-size: 30px;
+  }
+
+  .map-help {
+    display: block;
+  }
+
+  .map-svg {
+    position: relative;
+    left: auto;
+    top: auto;
+    min-width: 320px;
+  }
+
+  .info-bar {
+    grid-template-columns: 3fr 2fr;
+    gap: 8px;
+  }
+
+  .info-image {
+    grid-column: 1/3;
+    grid-row: 1;
+    max-height: 155px;
+    max-width: 375px;
+  }
+
+  .cta-button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,48 @@
+/* =========================================================
+   Mobile Map Zoom - Layout Safe Version
+   ---------------------------------------------------------
+   重點：
+   - 不改 .map-svg / svg 的原本寬高
+   - 不改 .map-svg-wrap 的高度
+   - 不用 overflow scroll
+   - 初始狀態維持原本整張地圖
+   - 只在使用者縮放時套 transform
+   ========================================================= */
+
+@media (max-width: 768px) {
+  html,
+  body {
+    min-height: 100%;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  
+  .map-svg-wrap {
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: contain;
+    user-select: none;
+  }
+
+  .map-svg-wrap svg.map-svg__inline,
+  .map-svg-wrap svg {
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .map-svg-wrap.is-map-zoomed {
+    cursor: grab;
+  }
+
+  .map-svg-wrap.is-map-zoomed:active {
+    cursor: grabbing;
+  }
+
+  .map-head {
+    z-index: 20;
+  }
+
+  .map-help {
+    z-index: 30;
+  }
+}

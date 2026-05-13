@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singapore F1 Seat Map Layout</title>
+  <link rel="stylesheet" href="./css/main.css?var=2026051303" />
+  <link rel="stylesheet" href="./css/mobile-map-zoom.css?var=20260512" />
+</head>
+<body>
+  <main class="seat-page">
+    <aside class="seat-sidebar">
+      <!-- 左側固定圖樣：包含左側 FORMULA ONE 與左側垂直線條 -->
+      <img
+        class="sidebar-border-left"
+        src="./assets/svg/stage-sidebar-border-left.svg"
+        alt=""
+        aria-hidden="true"
+      />
+
+      <!-- 上側固定線框：包含上方白線、右上斜角、黃色短線 -->
+      <img
+        class="sidebar-border-top"
+        src="./assets/svg/stage-sidebar-border-top.svg"
+        alt=""
+        aria-hidden="true"
+      />
+
+      <!-- 內容層：所有文字、按鈕、清單都正常 HTML 排版 -->
+      <div class="sidebar-content">
+        <header class="seat-heading">
+          <div>
+            <h1>座位列表 </h1>
+            <button class="seat-category-toggle" type="button" data-category="grandstand">
+              <span class="category-flip">
+                <span class="category-face category-face--front">Grandstand</span>
+                <span class="category-face category-face--back">Hospitality</span>
+              </span>
+            </button>
+          </div>
+
+        </header>
+
+        <nav class="zone-nav" aria-label="Zone 篩選">
+          <button class="zone-chip" type="button" data-zone="ZONE 1">ZONE 1</button>
+          <button class="zone-chip" type="button" data-zone="ZONE 2">ZONE 2</button>
+          <button class="zone-chip" type="button" data-zone="ZONE 3">ZONE 3</button>
+          <button class="zone-chip" type="button" data-zone="ZONE 4">ZONE 4</button>
+          <button class="zone-chip" type="button" data-zone="PADDOCK ZONE">PADDOCK ZONE</button>
+        </nav>
+
+        <section class="seat-list-wrap" aria-label="看台清單">
+          <ul class="seat-list">
+            <li class="seat-card is-active" style="--zone-color: #d923ff;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 1</span>
+              </div>
+            </li>
+
+            <li class="seat-card" style="--zone-color: #d923ff;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 1</span>
+              </div>
+            </li>
+
+            <li class="seat-card" style="--zone-color: #ff9f1a;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 2</span>
+              </div>
+            </li>
+
+            <li class="seat-card" style="--zone-color: #ff9f1a;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 2</span>
+              </div>
+            </li>
+
+            <li class="seat-card" style="--zone-color: #ff2d2d;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 3</span>
+              </div>
+            </li>
+
+            <li class="seat-card" style="--zone-color: #2f80ed;">
+              <div class="seat-card-photo">
+                <img src="./assets/images/photo_grandstand.png" alt="" />
+              </div>
+              <div class="seat-card__content">
+                <h2>PADANG GRANDSTAND WEST</h2>
+                <span class="zone-badge">ZONE 4</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+
+    <!-- 右側地圖區 -->
+    <section class="seat-content">
+      <section class="map-area">
+        <div class="map-frame">
+          <span class="map-corner-line map-corner-line--tl"></span>
+
+          <div class="map-head">
+            <span class="map-edge map-edge--top"></span>
+            <span class="map-label">SEAT MAP</span>
+          </div>
+
+          <span class="map-edge map-edge--left"></span>
+
+          <div class="map-svg-wrap">
+            <div class="map-svg" data-svg-src="./assets/svg/singapore_f1_map.svg"></div>
+          </div>
+
+          <button class="map-help" type="button" aria-label="Help"><img src="./assets/svg/icon_info.svg" alt="info" /></button>
+        </div>
+      </section>
+
+      <section class="info-bar">
+        <div class="info-deco" aria-hidden="true"></div>
+
+        <div class="info-image">
+          <img src="./assets/images/photo_grandstand.png" alt="" />
+        </div>
+
+        <article class="info-copy">
+          <h2>PADANG GRANDSTAND WEST</h2>
+          <p>
+            位於賽道最後一個彎道後方，可欣賞到賽車衝過終點前的高速過彎與絕佳追擊畫面，
+            氣氛熱烈，是最受歡迎的看台區域之一。
+          </p>
+        </article>
+
+        <div class="info-action">
+          <button class="cta-button" type="button">立即前往詢問</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="./js/seat-list-fade.js"></script>
+  <script type="module" src="./js/seat-map-app.js"></script>
+  <script type="module" src="./js/seat-map-mobile-zoom.js"></script>
+  <!--裝飾線寬度-->
+  <script>
+    (function () {
+      function syncSidebarBorderTopPosition() {
+        const sidebar = document.querySelector(".seat-sidebar");
+        const leftBorder = document.querySelector(".sidebar-border-left");
+
+        if (!sidebar || !leftBorder) return;
+        
+        const rect = leftBorder.getBoundingClientRect();
+        const width = rect.width;
+
+        if (!width) return;
+
+        sidebar.style.setProperty(
+          "--sidebar-border-left-real-w",
+          `${width}px`
+        );
+      }
+
+      window.addEventListener("load", syncSidebarBorderTopPosition);
+      window.addEventListener("resize", syncSidebarBorderTopPosition);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        syncSidebarBorderTopPosition();
+
+        const leftBorder = document.querySelector(".sidebar-border-left");
+
+        if (leftBorder) {
+          leftBorder.addEventListener("load", syncSidebarBorderTopPosition);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
