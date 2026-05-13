@@ -102,7 +102,7 @@ button {
 .sidebar-content {
   position: relative;
   z-index: 2;
-  height: 100%;
+  height: 100dvh;
   min-height: 0;
   display: grid;
   grid-template-rows: auto auto 1fr;
@@ -862,7 +862,8 @@ button {
   }
 
   .sidebar-content {
-    padding: 20px 15px 8px 15px;
+    height: 100%;
+    padding: 15px 15px 6px 15px;
   }
 
   .zone-nav{
@@ -890,7 +891,7 @@ button {
 
   .seat-card {
     grid-template-columns: 1fr;
-    grid-template-rows: 108px auto;
+    grid-template-rows: 98px auto;
     margin-bottom: 0px;
   }
 
