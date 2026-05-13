@@ -149,8 +149,8 @@ button {
 
 .seat-category-toggle {
   position: relative;
-  width: 120px;
-  height: 22px;
+  width: 127px;
+  height: 28px;
   padding: 0;
   border: none;
   background: transparent;
@@ -174,13 +174,12 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
-  justify-items: start;
   backface-visibility: hidden;
   font-size: 15px;
   font-weight: 400;
   text-transform: uppercase;
   color: var(--accent);
-  border: none;
+  border: 1px solid var(--accent);
   letter-spacing: .04rem;
 }
 
@@ -527,7 +526,7 @@ button {
 .map-zone-target.is-zone-active,
 .map-zone-target.is-zone-active * {
   fill: var(--zone-color) !important;
-  opacity: 0.38;
+  opacity: 0.48;
 }
 
 .map-seat-target.is-zone-active:not(.is-active):not(.is-dim) {
