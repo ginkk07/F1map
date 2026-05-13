@@ -284,7 +284,7 @@ button {
 .seat-card {
   --zone-color: #d923ff;
   position: relative;
-  min-height: 85px;
+  min-height: 74px;
   display: grid;
   grid-template-columns: 104px minmax(0, 1fr);
   gap: 6px;
@@ -881,7 +881,7 @@ button {
   .seat-sidebar::after{
     background-image: url(../assets/svg/stage-sidebar-decorative-mob.svg);
     aspect-ratio: 200 / 32;
-    width: 220px;
+    width: 180px;
     height: auto;
     top: auto;
     left: 0;
@@ -896,6 +896,10 @@ button {
 
   .seat-card:hover{
     transform:none;
+  }
+
+  .seat-card h2{
+    font-size: 14px;
   }
 
   .seat-card__content{
