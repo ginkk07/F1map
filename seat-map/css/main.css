@@ -120,7 +120,6 @@ button {
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.45);
   margin-bottom: 1rem;
-  margin-right: 16px;
 }
 
 .seat-heading > div{
@@ -141,7 +140,7 @@ button {
 .seat-heading h1 {
   margin: 0;
   font-size: 35px;
-  margin-right: 12px;
+  margin-right: 16px;
   line-height: 1.1;
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -149,8 +148,8 @@ button {
 
 .seat-category-toggle {
   position: relative;
-  width: 127px;
-  height: 28px;
+  width: 118px;
+  height: 26px;
   padding: 0;
   border: none;
   background: transparent;
@@ -175,7 +174,7 @@ button {
   display: grid;
   place-items: center;
   backface-visibility: hidden;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
   text-transform: uppercase;
   color: var(--accent);
