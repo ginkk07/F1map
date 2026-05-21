@@ -31,7 +31,7 @@ export const CATEGORY_LABEL = {
 
 // 控制 SVG 裡 #zone-1、#zone-2、#zone-3、#zone-4 的背景色。
 export const ZONE_COLOR = {
-  "ZONE 1": "#d923ff",
+  "ZONE 1": "#e07aff",
   "ZONE 2": "#ff9f1a",
   "ZONE 3": "#ff2d2d",
   "ZONE 4": "#2f80ed",
@@ -46,7 +46,7 @@ export const ZONE_SEAT_FILTER_COLOR = {
   "ZONE 2": "#ffd08a",
   "ZONE 3": "#ff9a9a",
   "ZONE 4": "#9fc9ff",
-  "PADDOCK ZONE": "#f3dc9b"
+  "PADDOCK ZONE": "#cdb881"
 };
 
 // 控制地圖中「看臺」active 後的顏色。
@@ -57,7 +57,7 @@ export const ZONE_SEAT_ACTIVE_COLOR = {
   "ZONE 2": "#ff9f1a",
   "ZONE 3": "#ff2d2d",
   "ZONE 4": "#2f80ed",
-  "PADDOCK ZONE": "#d8a62d"
+  "PADDOCK ZONE": "#ff9d00"
 };
 
 // 保留舊名稱，避免其他檔案或測試程式仍引用 ZONE_SEAT_COLOR 時壞掉。
@@ -83,7 +83,8 @@ function createSeat({
   description,
   color,
   activeColor,
-  filterColor
+  filterColor,
+  image
 }) {
   const normalizedZone = normalizeZone(zone);
   const normalizedCategory = normalizeCategory(category);
@@ -111,7 +112,8 @@ function createSeat({
     filterColor: seatFilterColor,
 
     mapIds,
-    image: DEFAULT_IMAGE,
+    // 有傳 image 就用該筆資料，沒傳才 fallback 預設圖
+    image: image || DEFAULT_IMAGE,
     description
   };
 }
@@ -129,6 +131,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 4",
     mapIds: ["grandstand-padangA"],
+    image: "../assets/images/grandstand_padangA.png",
     description: "位於 Padang 區域，靠近大型舞台、餐飲與活動區。觀眾可感受賽車高速通過城市街道的聲浪，同時方便參與演唱會與場內娛樂，適合重視整體活動體驗的觀眾。"
   }),
 
@@ -138,6 +141,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 4",
     mapIds: ["grandstand-padangB"],
+    image: "../assets/images/grandstand_padangB.png",
     description: "同樣位於 Padang 區域，可欣賞 Turn 9 到 Turn 10 周邊賽道動態。此區最大特色是結合比賽、舞台演出與夜間節慶氣氛，適合想把 F1 當成完整娛樂活動體驗的旅客。"
   }),
 
@@ -147,6 +151,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 4",
     mapIds: ["grandstand-connaught"],
+    image: "../assets/images/grandstand_connaught.png",
     description: "位於 Turn 14 附近，賽車通過橋面後進入重煞右彎，是可能出現超車嘗試與防守的位置。適合想看近距離煞車、入彎與輪對輪攻防的觀眾。"
   }),
 
@@ -156,6 +161,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 4",
     mapIds: ["grandstand-stamford"],
+    image: "../assets/images/grandstand_stamford.png",
     description: "位於 Turn 7 到 Turn 8 之間，是 Zone 4 中較適合觀看重煞與超車嘗試的位置。賽車高速進彎後減速切入，再加速離開，能清楚看到車手攻防與路線選擇。"
   }),
 
@@ -165,6 +171,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 4",
     mapIds: ["grandstand-empress"],
+    image: "../assets/images/grandstand_empress.png",
     description: "位於 Turn 11 到 Turn 12 之間，周邊具有新加坡歷史街區與市政建築景觀。觀眾可看到賽車穿梭於狹窄街道與護牆之間，街道賽氛圍比一般看台更明顯。"
   }),
 
@@ -175,6 +182,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 2",
     mapIds: ["bayfront-grandstand"],
+    image: "../assets/images/grandstand_bayfront.png",
     description: "位於 Turn 17 附近，賽車會從高速路段大幅減速進入彎角，再重新加速通過濱海灣區域。這裡適合觀看重煞、入彎、出彎加速的完整動作變化。"
   }),
 
@@ -184,8 +192,20 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 2",
     mapIds: ["grandstand-skyline"],
+    image: "../assets/images/grandstand_skyline.png",
     description: "位於賽道尾段、接近 Pit Lane 入口前方，可看到賽車通過最後幾個高壓彎角。視野結合濱海灣天際線與夜賽燈光，適合想要景觀感與速度感並重的觀眾。"
   }),
+
+  createSeat({
+    id: "promenade-grandstand",
+    title: "PROMENADE GRANDSTAND",
+    category: "grandstand",
+    zone: "ZONE 2",
+    mapIds: ["grandstand-promenade"],
+    image: "../assets/images/grandstand_promenade.png",
+    description: "位於 Turn 17 到 Turn 18 之間，背景鄰近 Singapore Flyer。觀眾可欣賞賽車在夜色與摩天輪景觀中高速通過，適合重視拍照畫面、城市夜景與賽道尾段氛圍的觀眾。"
+  }),
+
 
   /** ZONE 1 **/
   createSeat({
@@ -194,6 +214,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-turn1"],
+    image: "../assets/images/grandstand_turn1.png",
     description: "位於第一彎重煞車區，賽車從主直道高速衝出後進入 Turn 1，經常出現搶位、防守與起跑後的激烈攻防。適合想看超車嘗試、晚煞車與比賽開局混戰的觀眾。"
   }),
 
@@ -203,6 +224,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-turn2"],
+    image: "../assets/images/grandstand_turn2.png",
     description: "可俯瞰 Turn 1、Turn 2 與 Turn3 的連續彎角，觀察車手在起跑後如何搶線、修正路線並重新加速。相比 Turn 1 這裡能看到更完整的前段彎角節奏。"
   }),
 
@@ -230,6 +252,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-republic"],
+    image: "../assets/images/grandstand_republic.png",
     description: "位於 Turn 5 右側視角，可看到賽車全油門穿越街道賽窄路後進入高速路段。畫面壓迫感強，能感受新加坡街道賽貼牆高速通過的精準度與臨場感。"
   }),
 
@@ -239,6 +262,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-raffles"],
+    image: "../assets/images/grandstand_raffles.png",
     description: "位於 Turn 5 一帶，賽車通過中高速彎後準備進入後續直線與 DRS 區。這裡能欣賞車手如何維持速度、貼近護牆出彎，適合喜歡看技術路線與速度延伸感的觀眾。"
   }),
 
@@ -248,6 +272,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-chicane_x40_turn1"],
+    image: "../assets/images/grandstand_chicane@turn1.png",
     description: "位於 Turn 1 內側，可觀看賽車從主直道高速進彎，並延伸觀察 Turn 1 至 Turn 3 的攻防，適合想看起跑後混戰的觀眾。"
   }),
 
@@ -257,6 +282,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-chicane_x40_turn2"],
+    image: "../assets/images/grandstand_chicane@turn2.png",
     description: "位於 Turn 2 內側，可看到 Turn 1、Turn 2、Turn 3 的連續彎角動態，是觀察車手搶線、防守與出彎加速的重點位置。"
   }),
   
@@ -266,6 +292,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-pit-exit"],
+    image: "../assets/images/grandstand_pit-exit.png",
     description: "位於 Pit Exit 附近，可觀看賽車離開維修區後重新加入賽道，適合關注進站策略、輪胎更換後位置變化與賽道匯入動態。"
   }),
 
@@ -302,8 +329,8 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-super-pit"],
-    description:
-     "位於主直道上方高階席，正對 F1 車隊車庫、起跑線與終點線。可觀看車手起跑準備、維修區動態與衝線煙火，套票通常也包含餐飲、飲料與官方商品禮遇，適合想要完整主賽場體驗的觀眾。"
+    image: "../assets/images/grandstand_super-pit.png",
+    description: "位於主直道上方高階席，正對 F1 車隊車庫、起跑線與終點線。可觀看車手起跑準備、維修區動態與衝線煙火，套票通常也包含餐飲、飲料與官方商品禮遇，適合想要完整主賽場體驗的觀眾。"
   }),
 
   createSeat({
@@ -330,6 +357,7 @@ export const SEAT_DATA = [
     category: "grandstand",
     zone: "ZONE 1",
     mapIds: ["grandstand-pit"],
+    image: "../assets/images/grandstand_pit.png",
     description: "位於主直道旁，是最具代表性的新加坡 F1 看台之一。觀眾可近距離欣賞起跑、衝線、維修區進出與頒獎前後氣氛，適合第一次觀賽或想感受完整大獎賽核心氛圍的旅客。"
   }),
 
@@ -343,22 +371,15 @@ export const SEAT_DATA = [
   }),
 
   createSeat({
-    id: "promenade-grandstand",
-    title: "PROMENADE GRANDSTAND",
-    category: "grandstand",
-    zone: "ZONE 2",
-    mapIds: ["grandstand-promenade"],
-    description: "位於 Turn 17 到 Turn 18 之間，背景鄰近 Singapore Flyer。觀眾可欣賞賽車在夜色與摩天輪景觀中高速通過，適合重視拍照畫面、城市夜景與賽道尾段氛圍的觀眾。"
-  }),
-
-  createSeat({
     id: "marina-bay-grandstand",
     title: "MARINA BAY GRANDSTAND",
     category: "grandstand",
-    zone: "ZONE 2",
+    zone: "ZONE 1",
     mapIds: ["grandstand-marina-bay"],
+    image: "../assets/images/grandstand_marina-bay.png",
     description: "靠近 Turn 18 與賽道尾段，可看到賽車進入最後幾個彎角前的路線控制。此區結合濱海灣夜景與賽道氛圍，適合想兼顧比賽畫面與新加坡城市景觀的觀眾。"
   })
+
 ];
 
 const SEAT_SOURCE_INDEX = new Map(SEAT_DATA.map((seat, index) => [seat.id, index]));
