@@ -19,12 +19,7 @@
       />
 
       <!-- 上側固定線框：包含上方白線、右上斜角、黃色短線 -->
-      <img
-        class="sidebar-border-top"
-        src="./assets/svg/stage-sidebar-border-top.svg"
-        alt=""
-        aria-hidden="true"
-      />
+      <img class="sidebar-border-top" src="./assets/svg/stage-sidebar-border-top.svg" alt="" aria-hidden="true"/>
 
       <!-- 內容層：所有文字、按鈕、清單都正常 HTML 排版 -->
       <div class="sidebar-content">
@@ -33,9 +28,20 @@
             <h1>座位列表 </h1>
             <button class="seat-category-toggle" type="button" data-category="grandstand">
               <span class="category-flip">
-                <span class="category-face category-face--front">Grandstand</span>
-                <span class="category-face category-face--back">Hospitality</span>
+                <span class="category-face category-face--front">
+                  Grandstand
+                  <div class="icon_svg">
+                    <img src="./assets/svg/icon_exchange.svg" alt="seat_exchange">
+                  </div>
+                </span>
+                <span class="category-face category-face--back">
+                  Hospitality
+                  <div class="icon_svg">
+                    <img src="./assets/svg/icon_exchange.svg" alt="seat_exchange">
+                  </div>
+                </span>
               </span>
+              
             </button>
           </div>
 
@@ -152,7 +158,7 @@
         </article>
 
         <div class="info-action">
-          <button class="cta-button" type="button">立即前往詢問</button>
+          <button class="cta-button" type="button" onclick="location.href='https://lin.ee/gRnPXfq/'">立即前往詢問</button>
         </div>
       </section>
     </section>

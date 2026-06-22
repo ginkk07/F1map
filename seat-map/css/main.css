@@ -157,6 +157,12 @@ button {
   cursor: pointer;
   perspective: 800px;
   overflow: hidden;
+  transition: 0.3s;
+
+  &:hover {
+    background: #aeff511f;
+    box-shadow: 0 0 14px -2px #9fff5175, inset 0 0 0 1px #9fff5175;
+  }
 }
 
 .category-flip {
@@ -173,13 +179,24 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
+  grid-auto-flow: column;
+  justify-content: space-evenly;
+
   backface-visibility: hidden;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 400;
   text-transform: uppercase;
   color: var(--accent);
   border: 1px solid var(--accent);
   letter-spacing: .04rem;
+}
+
+.category-face > .icon_svg{
+  width: 15px;
+  aspect-ratio: 1 / 1;
+  line-height: 0;
+
+  
 }
 
 .category-face--back {
@@ -216,7 +233,11 @@ button {
   padding: 0 10px;
   font-size: 14px;
   font-weight: 700;
-  cursor: default;
+  cursor: pointer;
+
+  &:hover {
+    background: #b4b4b428;
+  }
 }
 
 .zone-chip.is-active {
@@ -299,6 +320,7 @@ button {
 .seat-card:hover{
   background: linear-gradient(320deg, rgb(26 28 37) 0%, rgb(0 0 0) 100%);
   transform: translateX(5px);
+  border-color: #5c5c5c;
 }
 
 .seat-card.is-active {
@@ -525,7 +547,7 @@ button {
 .map-zone-target.is-zone-active,
 .map-zone-target.is-zone-active * {
   fill: var(--zone-color) !important;
-  opacity: 0.48;
+  opacity: 0.45;
 }
 
 .map-seat-target.is-zone-active:not(.is-active):not(.is-dim) {
@@ -740,14 +762,18 @@ button {
   font-weight: 700;
   cursor: default;
   white-space: nowrap;
-
+  cursor: pointer;
   clip-path: polygon(
     0% 0%,
     100% 0%,
     100% calc(100% - 13px),
     calc(100% - 13px) 100%,
     0 100%
-  )
+  );
+  
+  &:hover{
+    background: #303030;
+  }
 }
 
 /* =========================

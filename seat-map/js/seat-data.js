@@ -35,7 +35,7 @@ export const ZONE_COLOR = {
   "ZONE 2": "#ff9f1a",
   "ZONE 3": "#ff2d2d",
   "ZONE 4": "#2f80ed",
-    "PADDOCK ZONE": "#c8a85a"
+    "PADDOCK ZONE": "#ffba54"
 };
 
 // 控制地圖中「看臺」active 前的顏色。
@@ -43,17 +43,17 @@ export const ZONE_COLOR = {
 // 原則：使用比標籤色更淡的同色系，讓可點擊範圍清楚，但不搶過 active 狀態。
 export const ZONE_SEAT_FILTER_COLOR = {
   "ZONE 1": "#fab7f5",
-  "ZONE 2": "#ffd08a",
+  "ZONE 2": "#ffba54",
   "ZONE 3": "#ff9a9a",
   "ZONE 4": "#9fc9ff",
-  "PADDOCK ZONE": "#cdb881"
+  "PADDOCK ZONE": "#ebbe52"
 };
 
 // 控制地圖中「看臺」active 後的顏色。
 // active 後 = 該看臺已被使用者點選。
 // 原則：active 後顏色等同左側座位卡片的標籤顏色。
 export const ZONE_SEAT_ACTIVE_COLOR = {
-  "ZONE 1": "#d923ff",
+  "ZONE 1": "#dc4bfa",
   "ZONE 2": "#ff9f1a",
   "ZONE 3": "#ff2d2d",
   "ZONE 4": "#2f80ed",
