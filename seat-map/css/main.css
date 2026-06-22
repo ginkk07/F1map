@@ -232,7 +232,7 @@ button {
   color: #ffffff;
   padding: 0 10px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
@@ -241,9 +241,9 @@ button {
 }
 
 .zone-chip.is-active {
-  color: #030303;
-  background: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent);
+  background: #e8ff1c1f;
+  border-color: #e8ff1cb5;
 }
 
 /* =========================
