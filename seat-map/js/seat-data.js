@@ -234,7 +234,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["sky-suite-turn1"],
-    description: "位於 Turn 1 區域的高階包廂，可從較高視角觀看主直道後的重煞、起跑攻防與第一彎混戰，適合重視舒適度與招待服務的觀眾。"
+    image: "./assets/images/hospitality_sky-suite.png",
+    description: "Sky Suite Turn 1 位於第一彎區域，是結合高階招待服務與重煞攻防視角的頂級 Hospitality 票種。賓客可在全空調套房中享用精緻餐飲、香檳、葡萄酒、烈酒、啤酒與軟性飲品，並由專屬 Suite Ambassador 協助接待。專屬觀景區可欣賞賽車從主直道高速衝入 Turn 1 的瞬間，感受起跑後搶位、晚煞車與第一彎混戰的震撼。賽事期間亦可前往 Sky Terrace 欣賞賽道與新加坡天際線，並通行全區活動與 Padang Stage 演唱會。"
   }),
 
   createSeat({
@@ -243,7 +244,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["sky-suite-turn2"],
-    description: "位於 Turn 2 區域的高階包廂，可俯瞰前段連續彎角，觀察賽車通過 Turn 1、Turn 2 後重新加速的節奏，兼具視野與餐飲服務。"
+    image: "./assets/images/hospitality_sky-suite.png",
+    description: "Sky Suite Turn 2 位於前段連續彎角區域，適合欣賞賽車通過 Turn 1、Turn 2 至 Turn 3 的完整攻防節奏。賓客可在全空調套房與私人觀景區中舒適觀賽，享用精緻餐飲、香檳、葡萄酒、烈酒、啤酒與軟性飲品，並由專屬 Suite Ambassador 提供接待服務。此區可觀察車手在起跑後如何搶線、防守、修正路線並重新加速，比單一彎角更能感受比賽前段的戰術變化。票券亦可通行全區活動、Padang Stage 演唱會與 Sky Terrace 屋頂景觀空間。"
   }),
 
   createSeat({
@@ -302,7 +304,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["lounge-turn31", "lounge-turn32"],
-    description: "位於 Turn 3 區域，結合冷氣招待空間與專屬看台座位。可觀看賽車通過前段彎角後，全油門衝向 Republic Boulevard。"
+    image: "./assets/images/hospitality_lounge@turn3.png",
+    description: "Lounge @ Turn 3 位於第一組彎角末端，是結合全空調招待空間與專屬 Turn 3 Premier Grandstand 的高階 Hospitality 票種。賓客可在 Lounge 中享用國際美食、輕食點心、葡萄酒、啤酒與軟性飲品，並透過現場轉播掌握賽道動態；想感受實際聲浪時，也可步行前往專屬戶外看臺，欣賞賽車在前段彎角爭奪位置後，煞入 Turn 3 再全油門衝向 Republic Boulevard 的畫面。此區提供較寬敞座椅、Executive restroom 與 Suite Ambassador 接待服務，兼具舒適度與臨場感。票券亦可通行全區活動與 Padang Stage 演唱會，並依現場名額體驗新加坡摩天輪。"
   }),
 
   createSeat({
@@ -311,16 +314,18 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["lounge-turn3"],
-    description: "位於 Turn 3 Hospitality 區域內，可觀看賽車出彎後加速駛向 Republic Boulevard，結合冷氣室內空間、餐飲酒水與近距離賽道視角。"
+    image: "./assets/images/hospitality_the-green-room.png",
+    description: "The Green Room 位於 Turn 3 區域，是兼具舒適招待空間與近距離賽道視野的高階 Hospitality 票種。賓客可在全空調套房中放鬆觀賽，享用精心規劃的國際美食、香檳、葡萄酒、烈酒、啤酒與軟性飲品，也可前往專屬戶外看臺，近距離感受賽車通過前段彎角後，全油門衝向 Republic Boulevard 的速度與聲浪。相較一般看臺，The Green Room 更重視舒適度、餐飲服務與招待彈性，適合企業客戶、親友同行或想以輕鬆方式享受夜賽的旅客。票券亦可通行全區活動與 Padang Stage 演唱會，並依現場名額體驗新加坡摩天輪，完整結合賽道觀戰、美食酒水與濱海灣夜賽氛圍。"
   }),
 
   createSeat({
     id: "observatory-turn-3-5",
-    title: "OBSERVATORY @ TURN 3.5",
+    title: "OBSERVATORY @ TURN 3",
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["observ_x40_turn3.5"],
-    description: "位於 Turn 3 後方的高階招待區，可在冷氣套房、賽道看台或戶外露台觀看賽車出彎後衝向 Republic Boulevard，結合餐飲酒水與多視角觀賽體驗。"
+    image: "./assets/images/hospitality_Observ@3.png",
+    description: "Observ@3 位於 Turn 3 後方，是結合雙層招待空間與賽道視野的高階 Hospitality 票種。賓客可從戶外觀景區或專屬賽道視角，欣賞賽車駛出 Turn 3 後全油門衝向 Republic Boulevard 的速度與聲浪；也可在全空調招待套房中享用國際美食、香檳、葡萄酒、烈酒、啤酒、軟性飲品與調酒吧服務。場內提供賽事現場轉播、Executive restroom 與專屬 Suite Ambassador 接待，並依現場名額體驗新加坡摩天輪，適合想兼具舒適招待、餐飲酒水與近距離賽道臨場感的旅客。"
   }),
 
   createSeat({
@@ -339,7 +344,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["sky-suite-pit-straight"],
-    description: "位於主直道高階包廂，正對維修區、起跑線與終點線，可欣賞起跑、進站策略、衝線與煙火，是最完整的高端觀賽位置之一。"
+    image: "./assets/images/hospitality_sky-suite.png",
+    description: "Sky Suite Pit Straight 位於主直道核心區域，是最能感受新加坡 F1 賽事主場氛圍的高階 Hospitality 票種之一。賓客可在全空調套房與私人觀景區中欣賞起跑、衝線、維修區動態與賽車高速通過主直道的震撼聲浪，並享用精緻餐飲、香檳、葡萄酒、烈酒、啤酒與軟性飲品。專屬 Suite Ambassador 將協助接待與服務安排，讓觀賽體驗更舒適完整。賽事期間亦可前往 Sky Terrace 屋頂空間，欣賞賽道、新加坡天際線與夜賽氛圍，並通行全區活動與 Padang Stage 演唱會。"
   }),
 
   createSeat({
@@ -348,7 +354,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "PADDOCK ZONE",
     mapIds: ["stands-paddock"],
-    description: "位於 Paddock Zone／Pit Straight 一帶的頂級招待區，可近距離感受維修區、車隊車庫與 Pit Lane Walk 體驗，結合高階餐飲與賽事核心區氛圍。"
+    image: "./assets/images/hospitality_paddock-club.png",
+    description: "位於 Paddock Zone／Pit Straight 核心區，是新加坡 F1 最具代表性的頂級貴賓招待體驗。賓客可在舒適的空調套房中欣賞賽道動態，一邊享用精緻餐飲、名廚概念餐廳與高級飲品服務，一邊感受 F1 賽車從核心區域高速掠過的震撼聲浪。每日更可尊享 Pit Lane Walk，近距離觀看 F1 賽車、車隊車庫、維修區作業與工作人員準備過程，深入感受一般看臺難以接觸的賽事幕後氛圍。賽事期間亦可從多個觀景平台欣賞賽道盛況，並前往 Paddock Club™ 中庭或屋頂觀景台，飽覽濱海灣夜景與賽後煙火，完整體驗新加坡夜賽最頂級的一面。"
   }),
 
   createSeat({
@@ -367,7 +374,8 @@ export const SEAT_DATA = [
     category: "hospitality",
     zone: "ZONE 1",
     mapIds: ["twenty3-turn19"],
-    description: "位於 Turn 19 與終點區域附近，可觀看最後彎、衝線、頒獎與煙火。結合高階餐飲、酒吧與娛樂，是頂級招待型票種。"
+    image: "./assets/images/hospitality_twenty3.png",
+    description: "TWENTY3 位於 Turn 19 與終點區域附近，是結合賽道視野、餐飲、酒吧與娛樂氛圍的頂級招待型票種。賓客可從 Apex Lounge 屋頂欣賞濱海灣景色、頒獎台與終點線，感受賽車通過最後彎、衝向方格旗的關鍵時刻；亦可於多間特色餐廳中，一邊享用精緻餐飲與飲品，一邊近距離觀賞賽道尾段動態。賽事期間還可進入全區活動與 Padang Stage 演唱會，並依現場名額體驗新加坡摩天輪，完整感受新加坡夜賽結合速度、夜景、美食與娛樂的高端派對氛圍。"
   }),
 
   createSeat({
@@ -378,8 +386,48 @@ export const SEAT_DATA = [
     mapIds: ["grandstand-marina-bay"],
     image: "./assets/images/grandstand_marina-bay.png",
     description: "靠近 Turn 18 與賽道尾段，可看到賽車進入最後幾個彎角前的路線控制。此區結合濱海灣夜景與賽道氛圍，適合想兼顧比賽畫面與新加坡城市景觀的觀眾。"
-  })
+  }),
 
+  /** 額外增加 **/
+  createSeat({
+    id: "the-vista-suite-singapore-flyer",
+    title: "THE VISTA SUITE @ SINGAPORE FLYER",
+    category: "hospitality",
+    zone: "ZONE 2",
+    mapIds: ["vista-suite_x26_Torque"],
+    image: "./assets/images/hospitality_vista-suite.png",
+    description: "位於 Singapore Flyer 2 樓、Turn 17 至 Turn 18 與 Pit Entry 一帶，是結合高空景觀、私人觀景陽台與精緻招待服務的 Hospitality 票種。賓客可在全空調套房中透過現場轉播掌握賽況，或前往專屬戶外陽台，欣賞賽車重煞進入最後彎、駛入維修區前的關鍵畫面。套票包含迎賓接待、晚餐、宵夜、國際美食，以及香檳、葡萄酒、烈酒、啤酒與軟性飲品；亦可使用 Flyer Hospitality 專屬看臺、酒吧與活動區，並享有新加坡摩天輪優先排隊體驗，適合重視視野、舒適度與完整夜賽氛圍的旅客。"
+  }),
+
+  createSeat({
+    id: "torque-singapore-flyer",
+    title: "TORQUE @ SINGAPORE FLYER",
+    category: "hospitality",
+    zone: "ZONE 2",
+    mapIds: ["vista-suite_x26_Torque"],
+    image: "./assets/images/hospitality_torque.png",
+    description: "Torque @ Singapore Flyer 位於新加坡摩天輪地面層，是兼具空調休憩空間、美食酒水與賽道周邊活動氛圍的 Hospitality 票種。雖然室內 Lounge 本身不直接面向賽道，但賓客可透過現場轉播掌握比賽進行，並步行前往專屬賽道看臺與 Flyer Hospitality 活動區，近距離欣賞賽車在最後彎前重煞，或駛入 Pit Entry 的緊張畫面。套票包含迎賓接待、晚餐、宵夜、國際美食、葡萄酒、啤酒與軟性飲品，並設有專屬酒吧、DJ 與互動活動；亦可依現場名額體驗新加坡摩天輪，適合想兼顧餐飲、娛樂與賽道臨場感的觀眾。"
+  }),
+
+  createSeat({
+    id: "lounge-plus-turn-3",
+    title: "LOUNGE PLUS",
+    category: "hospitality",
+    zone: "ZONE 1",
+    mapIds: ["lounge-plus"],
+    image: "./assets/images/hospitality_lounge-plus.png",
+    description: "Lounge Plus 位於 Turn 3，是比 Lounge @ Turn 3 更升級的高階 Hospitality 體驗。賓客可在裝潢更精緻的全空調 Lounge 中享用升級版國際美食，並享有更完整的飲品選擇，包含香檳、葡萄酒、烈酒、啤酒與軟性飲品。雖然 Lounge 本身不直接面向賽道，但附設戶外平台可感受現場氛圍，正式賽道觀戰則可前往 Turn 3 Premier Grandstand 專屬座位，近距離欣賞賽車通過前段彎角後，全油門衝向 Republic Boulevard 的畫面。場內提供賽事直播、專屬洗手間與 Suite Ambassador 接待服務，並可通行全區活動與 Padang Stage 演唱會。"
+  }),
+
+  createSeat({
+    id: "drivers-right-lounge",
+    title: "DRIVER'S RIGHT LOUNGE",
+    category: "hospitality",
+    zone: "ZONE 4",
+    mapIds: ["drivers-right-lounge"],
+    image: "./assets/images/hospitality_drivers-right-lounge.png",
+    description: "Driver’s Right Lounge 位於 Esplanade 四樓，是 Zone 4 區域的高階 Hospitality 票種，結合濱海灣景觀、賽道視野與夜間娛樂氛圍。賓客可選擇在全空調室內 Lounge 放鬆觀賽，透過現場轉播掌握賽況，也可前往半開放戶外露台，從高處欣賞 Turn 14 至 Turn 16 一帶的賽道動態與賽車朝 Turn 16 前進的畫面。套票包含升級版國際美食，以及香檳、葡萄酒、烈酒、啤酒與軟性飲品，並提供專屬洗手間與 Suite Ambassador 接待服務。此區距離 Zone 4 Padang Stage 約 10 分鐘步行，適合想兼顧賽事、城市夜景、美食酒水與演唱會娛樂的旅客。"
+  }),
 ];
 
 const SEAT_SOURCE_INDEX = new Map(SEAT_DATA.map((seat, index) => [seat.id, index]));
